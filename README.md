@@ -1,87 +1,281 @@
-# DarkShield
+ 🛡️ DarkShield — AI Security Platform
 
-**AI-Powered Defense Against Phishing, Scams & Social Engineering**
-*Detect the attack. Understand the manipulation. Protect the user.*
+   AI-Powered Defense Against Phishing, Scams & Social Engineering
 
-Single-file, dependency-free HTML/CSS/JS app. No build step, no backend,
-no API keys. Open `index.html` directly or run with VS Code Live Server.
+DarkShield is a cybersecurity platform designed to help users identify phishing, scams, and social-engineering attacks by analyzing both **technical threat indicators** and **human-manipulation techniques**.
 
-## What it is
-A cybersecurity dashboard that scans a URL + page/email text for phishing,
-scam, and social-engineering indicators and returns a transparent, explainable
-0–100 risk score.
+Unlike systems that only check whether a URL is suspicious, DarkShield also looks for tactics such as **fake urgency, scarcity, impersonation, fake social proof, credential requests, and suspicious payment behavior**.
 
-## Why it was built
-Built for ASYNC'26 (Track 03 — Cybersecurity & Defense) to address AI-assisted
-phishing and scam content that ordinary users increasingly can't recognize on
-sight.
+---
 
-## How it works
-1. **Detection engine** — regex/heuristic checks over the domain and pasted
-   text produce structured evidence flags (`brand_mismatch`, `fake_countdown`,
-   `suspicious_payment_form`, etc.).
-2. **Risk engine** — each flag carries a fixed, visible weight; flags sum to
-   a 0–100 score mapped to LOW / MODERATE / HIGH / CRITICAL. The full
-   point-by-point breakdown is shown via "Why this score?".
-3. **AI Threat Analysis** — the structured evidence (not the raw page) is
-   turned into a plain-English explanation: why it matters, what the
-   attacker is trying to do, what to do next. This is deterministic
-   template-based reasoning over the evidence — there is no external AI API
-   call in this build (see Notes below).
-4. **Manipulation Map & Attack Story** — visualize which social-engineering
-   techniques were detected and the attack as a sequence, not just a list.
-5. **Safety Mode** — on HIGH/CRITICAL results with a login or payment
-   signal, a defensive-intervention modal blocks the simulated "proceed"
-   action.
+ 🚀 Live Demo
 
-## Functional UI
-- **Search** — searches demo scenarios, detection signals, and this
-  session's recent scans; results scroll to the relevant section.
-- **Notifications** — real session events (scan completed, threat detected,
-  protection triggered), with unread state and "mark all as read".
-- **Settings** — theme (Dark / Darker / High Contrast), notification
-  toggle, technical/social-engineering signal visibility, compact/comfortable
-  density. Persisted to `localStorage`.
-- **Profile** — session scan count and threats detected.
-- **Scan History** — every scan this session, with a per-scan Full Report
-  (view + export as `.txt`), persisted to `localStorage` across refreshes.
-- **4 demo scenarios** — Safe Website, Shopping Scam, Delivery Scam,
-  Banking/KYC Scam — each produces distinct signals and risk levels.
+🔗 **Live Demo:**  
+https://rococo-tulumba-594198.netlify.app/
 
-## Unique selling point
-Signals are shown as transparent, clickable evidence rather than a black-box
-verdict — the user sees *which* manipulation techniques were detected, *why*
-they matter, and the exact points behind the score.
+🔗 **GitHub:**  
+https://github.com/Vandana-s-h/DarkShield-
 
-## Run locally
-```bash
-# Option A — just open it
-open index.html   # or double-click it
+---
 
-# Option B — simple static server
-python3 -m http.server 8000   # then visit http://localhost:8000
+ 🎯 Problem
 
-# Option C — VS Code
-# Right-click index.html → "Open with Live Server"
-```
+AI is making phishing and social-engineering attacks more convincing and harder to detect.
 
-## Upload to GitHub
-```bash
-git init
-git add .
-git commit -m "DarkShield prototype"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
-```
+Attackers can create realistic:
 
-## Notes / honest scope
-- Risk scores are transparent rule-based prototype signals, not a
-  statistically validated fraud probability, and are never shown as a
-  percentage claim.
-- "AI Threat Analysis" is deterministic template reasoning over structured
-  evidence in this build — there is no real external AI/LLM API call, and
-  none is faked.
-- Dashboard stats and Threat Pulse only reflect this session's actual scans
-  — no invented real-world statistics.
-- No API keys or secrets are used anywhere in the code.
+- Fake websites
+- Phishing messages
+- Product descriptions
+- Reviews
+- Brand impersonation
+- Urgency and scarcity messages
+- Fake social proof
+
+These techniques can pressure users into revealing credentials, making payments, or sharing sensitive information.
+
+Traditional protection often focuses primarily on suspicious links or known malicious domains, while the **psychological manipulation used by the attacker can remain difficult for users to understand**.
+
+---
+
+ 💡 Our Solution
+
+DarkShield combines two categories of signals:
+
+ 🔐 Technical Threat Signals
+
+- Suspicious URL structure
+- Domain anomalies
+- Brand impersonation
+- Suspicious login pages
+- Payment information requests
+- Redirect indicators
+- Suspicious paths and parameters
+
+ 🧠 Social-Engineering Signals
+
+- Fake urgency
+- Fake scarcity
+- Fear or pressure
+- Impersonation
+- Fake social proof
+- Suspicious requests for credentials or payments
+
+These signals are combined to produce a **transparent risk score** and an explanation of why the content may be dangerous.
+
+---
+
+ 📊 Risk Scoring
+
+DarkShield uses a transparent rule-based scoring approach.
+
+Example signals include:
+
+Signal	Weight
+Suspicious domain	+15
+Brand impersonation	+20
+Fake countdown	+15
+Fake social proof	+10
+Fake scarcity	+10
+Suspicious login request	+20
+Suspicious payment form	+20
+
+Risk levels:
+
+0–25: Low
+26–50: Moderate
+51–75: High
+76–100: Critical
+
+The score represents a risk assessment, not a probability that a website is fraudulent.
+
+🛒 Example Attack Scenario
+
+DarkShield demonstrates an AI-assisted shopping scam where an attacker creates a convincing fake product page.
+
+Example indicators:
+
+Extremely low product price
+Brand impersonation
+"Only 2 left" scarcity message
+Fake purchase activity
+Countdown timer
+Suspicious domain
+Login or payment request
+
+Instead of simply saying:
+
+"This website is dangerous."
+
+DarkShield explains the specific signals and manipulation techniques that contributed to the risk assessment.
+
+✨ Key Features
+🔎 URL Analysis
+
+Analyzes URL structure for suspicious characteristics such as:
+
+Domain anomalies
+Suspicious TLDs
+Excessive subdomains
+Unusual characters
+Suspicious paths
+Redirect parameters
+Brand impersonation patterns
+🧠 Social-Engineering Detection
+
+Identifies manipulation techniques including:
+
+Urgency
+Scarcity
+Fake social proof
+Impersonation
+Credential pressure
+Payment pressure
+📈 Explainable Risk Score
+
+Provides a transparent score instead of an unexplained classification.
+
+🤖 AI Threat Analysis
+
+Converts detected evidence into a human-readable security explanation.
+
+🛡️ Protection Guidance
+
+Helps users understand what makes the content suspicious and what action they should take.
+
+📜 Scan History
+
+Keeps track of previous security scans performed through the interface.
+
+🎭 Demonstration Scenarios
+
+Includes simulated phishing and scam scenarios for demonstrating different attack patterns.
+
+🆚 What Makes DarkShield Different?
+
+Traditional protection may focus primarily on:
+
+Suspicious URL
+       ↓
+Warning
+
+DarkShield aims to provide a broader explanation:
+
+Technical Signals
+       +
+Social-Engineering Signals
+       ↓
+Risk Analysis
+       ↓
+"WHY is this suspicious?"
+       ↓
+"WHAT should the user do?"
+USP
+
+Don't just detect the threat. Explain the manipulation.
+
+🏗️ Technology Stack
+Frontend
+HTML
+CSS
+JavaScript
+Security Analysis
+URL structure analysis
+Rule-based threat detection
+Pattern matching
+Social-engineering signal detection
+Explainable risk scoring
+AI Layer
+AI-assisted threat explanation architecture
+Evidence-driven analysis
+Deployment
+Netlify
+GitHub
+🧩 Architecture
+                ┌─────────────────┐
+                │      User       │
+                └────────┬────────┘
+                         ↓
+                ┌─────────────────┐
+                │   DarkShield    │
+                │    Interface    │
+                └────────┬────────┘
+                         ↓
+                ┌─────────────────┐
+                │ Signal Extraction│
+                └────────┬────────┘
+                         ↓
+          ┌──────────────┴──────────────┐
+          ↓                             ↓
+ ┌─────────────────┐           ┌─────────────────┐
+ │ Technical       │           │ Social           │
+ │ Threat Signals  │           │ Engineering      │
+ └────────┬────────┘           └────────┬────────┘
+          └──────────────┬──────────────┘
+                         ↓
+                ┌─────────────────┐
+                │  Risk Analysis  │
+                └────────┬────────┘
+                         ↓
+                ┌─────────────────┐
+                │ Risk Score +    │
+                │ Explanation     │
+                └────────┬────────┘
+                         ↓
+                ┌─────────────────┐
+                │ User Protection │
+                └─────────────────┘
+🧪 Current Prototype
+
+The current prototype demonstrates:
+
+URL-based threat analysis
+Social-engineering signal detection
+Transparent risk scoring
+Explainable security analysis
+Multiple simulated attack scenarios
+Scan history
+Security dashboard
+Deployed web interface
+
+The standalone prototype analyzes the URL structure and user-provided content. It does not claim to fetch and inspect arbitrary remote webpages directly.
+
+🔮 Future Scope
+
+DarkShield can be extended with:
+
+Live threat-intelligence APIs
+Domain reputation checking
+Browser extension integration
+Real-time webpage DOM analysis
+URL scanning through a secure backend
+QR-code phishing detection
+Email and SMS analysis
+Multilingual scam detection
+Threat intelligence correlation
+Downloadable security reports
+Automated browser warnings
+🛡️ Security Philosophy
+
+DarkShield follows an explainable security approach:
+
+Detect → Correlate → Explain → Protect
+
+The goal is not only to identify suspicious content, but also to help users understand how attackers are attempting to manipulate them.
+
+📌 Project Status
+
+Hackathon Prototype — Async'26
+
+DarkShield is currently a functional proof-of-concept demonstrating explainable phishing, scam, and social-engineering detection.
+
+👥 Team
+
+Built for Async'26.
+
+⚠️ Disclaimer
+
+DarkShield is a cybersecurity research and demonstration prototype.
+
+Its risk assessment should not be treated as a guarantee that a website or message is safe or malicious. Real-world deployment would require additional reputation services, threat intelligence, backend infrastructure, and continuous security validation.
+ 
