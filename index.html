@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>DarkShield — AI Security Platform</title>
+<style>
+:root{
+  --bg:#0b0716; --bg2:#120a24; --panel:#160f2aee; --panel-2:#0f0a1f; --border:#2a2050;
+  --text:#eee9fb; --muted:#a79fc4; --violet:#8b5cf6; --violet-2:#a78bfa; --cyan:#22e6d6;
+  --green:#3ecf8e; --amber:#f0b23c; --red:#ef5b6a;
+  --mono: ui-monospace,"SF Mono",Consolas,monospace; --sans:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --radius:14px;
+}
+body[data-theme="darker"]{--bg:#050308;--bg2:#08050f;--panel:#0d0a18ee;--panel-2:#08060f}
+body[data-theme="contrast"]{--muted:#d8d2ee;--border:#5b4bb8;--text:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0;background:
+  radial-gradient(1100px 500px at 10% -10%, #3b1d6b55, transparent),
+  radial-gradient(900px 500px at 105% 5%, #0b3a4055, transparent),
+  linear-gradient(180deg,var(--bg),var(--bg2));
+  color:var(--text);font-family:var(--sans);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+body.compact .panel{padding:16px}
+body.compact section{margin-bottom:20px!important}
+body{line-height:1.55}
+h1,h2,h3{margin:0}
+button{font-family:inherit}
+a{color:inherit}
+::selection{background:#8b5cf655}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;padding:12px 22px;border-bottom:1px solid var(--border);
+  background:#0b0716cc;backdrop-filter:blur(12px)}
+.brandmark{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:.02em}
+.navlinks{display:flex;gap:4px;flex-wrap:wrap}
+.navlinks a{font-size:12.5px;color:var(--muted);padding:7px 10px;border-radius:8px;text-decoration:none}
+.navlinks a:hover{color:var(--text);background:#ffffff08}
+.navctrls{display:flex;align-items:center;gap:9px}
+.iconbtn{position:relative;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+  background:var(--panel-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+.iconbtn:hover{border-color:var(--cyan);color:var(--cyan)}
+.badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;
+  border-radius:8px;padding:1px 5px;font-weight:700}
+.avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--violet),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#0b0716;cursor:pointer}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
+section{margin-bottom:46px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;color:var(--cyan);letter-spacing:.06em;margin-bottom:10px}
+
+/* HERO */
+.hero{display:grid;grid-template-columns:1.2fr .9fr;gap:36px;align-items:center;
+  min-height:min(78vh,640px);padding:56px 0 20px}
+.hero h1{font-size:clamp(44px,6.5vw,68px);line-height:1.04;letter-spacing:-.01em;margin-bottom:14px;
+  background:linear-gradient(100deg,#fff 20%,var(--cyan) 55%,var(--violet-2) 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:clamp(19px,2.4vw,24px);color:var(--text);font-weight:600;margin-bottom:14px}
+.hero p{color:var(--muted);font-size:15.5px;max-width:56ch;margin-bottom:26px}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:34px}
+.cta-primary{background:linear-gradient(90deg,var(--violet),var(--cyan));color:#0b0716;border:none;
+  font-weight:800;font-size:14px;padding:14px 24px;border-radius:11px;cursor:pointer;letter-spacing:.02em;
+  box-shadow:0 0 30px #8b5cf655}
+.cta-secondary{background:transparent;border:1px solid var(--border);color:var(--text);font-weight:700;
+  font-size:14px;padding:14px 24px;border-radius:11px;cursor:pointer}
+.pillars{display:flex;gap:10px;flex-wrap:wrap}
+.pillar{border:1px solid var(--border);background:#ffffff06;border-radius:11px;padding:12px 16px;font-size:13px;
+  font-weight:700;display:flex;align-items:center;gap:8px}
+.pillar .n{font-family:var(--mono);color:var(--cyan)}
+
+.heroviz{position:relative;height:340px;display:flex;align-items:center;justify-content:center}
+.ring{position:absolute;border-radius:50%;border:1.4px solid #22e6d655}
+.ring1{width:300px;height:300px;animation:spin 22s linear infinite}
+.ring2{width:230px;height:230px;border-color:#8b5cf655;animation:spin 16s linear infinite reverse}
+.ring3{width:160px;height:160px;border-color:#8b5cf699}
+@keyframes spin{to{transform:rotate(360deg)}}
+.node{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.node.n2{background:var(--violet-2);box-shadow:0 0 10px var(--violet-2)}
+.pulse{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+.statusbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;
+  border:1px solid var(--border);background:var(--panel);border-radius:var(--radius);padding:16px 20px}
+.statusitem{font-size:12.5px}
+.statusitem .l{color:var(--muted);margin-bottom:3px}
+.statusitem .v{font-weight:700;font-family:var(--mono);font-size:13px}
+.dotlive{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--green)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{border:1px solid var(--border);background:var(--panel);border-radius:var(--radius);padding:16px 18px}
+.stat .n{font-family:var(--mono);font-size:25px;font-weight:700}
+.stat .l{color:var(--muted);font-size:11.5px;margin-top:2px;letter-spacing:.02em}
+.stat.threat .n{color:var(--red)} .stat.hi .n{color:var(--amber)} .stat.safe .n{color:var(--green)}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.panel + .panel{margin-top:16px}
+.panel h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 16px}
+
+/* threat pulse */
+.pulseline{position:relative;height:54px;border-radius:8px;
+  background:linear-gradient(90deg,#3ecf8e33,#f0b23c33,#ef5b6a33);margin-top:8px}
+.pulseline .lbl{position:absolute;top:-18px;font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+.marker{position:absolute;top:16px;width:9px;height:9px;border-radius:50%;transform:translateX(-50%);cursor:default}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+input[type=text],textarea{width:100%;background:var(--panel-2);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);padding:11px 12px;font-family:var(--mono);font-size:13.5px;resize:vertical}
+input[type=text]:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+.field{margin-bottom:16px}
+.go{background:linear-gradient(90deg,var(--violet),var(--cyan));color:#0b0716;border:none;font-weight:800;
+  font-size:14.5px;padding:13px 20px;border-radius:10px;cursor:pointer;width:100%;letter-spacing:.02em}
+.demogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0 4px}
+.democard{border:1px solid var(--border);background:var(--panel-2);border-radius:11px;padding:13px;cursor:pointer}
+.democard:hover{border-color:var(--cyan)}
+.democard .t{font-weight:700;font-size:13.5px;margin-bottom:3px}
+.democard .d{color:var(--muted);font-size:11.5px}
+
+#scanning{display:none;font-family:var(--mono);font-size:13px;color:var(--cyan)}
+#scanning .line{opacity:0;transform:translateY(4px);transition:.25s}
+#scanning .line.show{opacity:1;transform:none}
+
+#results{display:none}
+.alerthead{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:6px}
+.gauge{position:relative;width:112px;height:112px;flex:none}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .num b{font-family:var(--mono);font-size:27px}
+.gauge .num span{font-size:10px;color:var(--muted);margin-top:3px}
+.level{font-size:21px;font-weight:800}
+.sub{color:var(--muted);font-size:13.5px}
+.linkbtn{background:none;border:1px solid var(--border);color:var(--cyan);font-size:12px;padding:6px 11px;
+  border-radius:7px;cursor:pointer;margin-top:8px}
+#breakdown{display:none;margin-top:10px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+#breakdown div{padding:2px 0}
+
+.sectitle{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:22px 0 10px}
+.siggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.sig{border:1px solid var(--border);background:var(--panel-2);border-radius:10px;padding:12px 13px;cursor:pointer}
+.sig .top{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.sig .name{font-weight:700;font-size:13px}
+.sig .desc{color:var(--muted);font-size:12px;display:none}
+.sig.open .desc{display:block;margin-top:4px}
+.clean{color:var(--green);font-size:14px}
+
+.explain h3{font-size:13.5px;margin:20px 0 8px;color:var(--violet-2)}
+.explain p{color:var(--muted);font-size:13.5px;max-width:78ch}
+.explain ul{margin:6px 0 0;padding-left:18px;color:var(--muted);font-size:13.5px}
+
+.mmap{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.mnode{border:1px solid var(--border);background:var(--panel-2);border-radius:9px;padding:9px 12px;
+  font-size:12px;color:var(--muted);cursor:pointer}
+.mnode.hit{border-color:var(--red);color:var(--red);background:#ef5b6a15}
+.marrow{color:#3d3060}
+
+.story{display:grid;gap:8px}
+.storystep{display:flex;gap:10px;font-size:13px}
+.storystep b{color:var(--cyan);font-family:var(--mono);font-size:12px}
+
+.safety{border:1px solid var(--red);background:#ef5b6a12;border-radius:12px;padding:16px 18px;margin-top:20px}
+.safety h3{color:var(--red);font-size:14.5px;margin-bottom:8px}
+.safety ul{margin:0 0 12px;padding-left:18px;font-size:13.5px;color:var(--muted)}
+.safety button{background:var(--red);color:#2a0808;border:none;font-weight:700;padding:10px 16px;border-radius:8px;cursor:pointer}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+.lvltag{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.lvltag.LOW{background:#3ecf8e22;color:var(--green)} .lvltag.MODERATE{background:#f0b23c22;color:var(--amber)}
+.lvltag.HIGH{background:#ef5b6a22;color:var(--red)} .lvltag.CRITICAL{background:#ef5b6a33;color:var(--red)}
+.rowbtn{background:none;border:1px solid var(--border);color:var(--cyan);font-size:11.5px;padding:5px 9px;border-radius:6px;cursor:pointer}
+
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.compare .panel ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)}
+@media (max-width:720px){.hero{grid-template-columns:1fr}.heroviz{height:220px}.compare{grid-template-columns:1fr}}
+
+.usp{background:linear-gradient(135deg,#8b5cf622,#22e6d611);border:1px solid var(--border);border-radius:16px;padding:30px}
+.usp h2{font-size:clamp(22px,3vw,30px);margin-bottom:12px}
+.futurelist{columns:2 220px;gap:22px;color:var(--muted);font-size:13.5px}
+.futurelist li{margin-bottom:6px}
+footer{border-top:1px solid var(--border);padding:30px 0;color:var(--muted);font-size:12.5px;text-align:center}
+footer b{color:var(--text)}
+
+.overlay{position:fixed;inset:0;background:#04030bcc;backdrop-filter:blur(4px);z-index:40;
+  display:none;align-items:flex-start;justify-content:center;padding:8vh 16px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;
+  max-width:520px;width:100%;max-height:78vh;overflow:auto}
+.modal.big{max-width:680px}
+.modal h3{font-size:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal .x{cursor:pointer;color:var(--muted);font-size:13px}
+.searchresult{padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--text)}
+.searchresult:hover{background:#ffffff0a}
+.searchresult small{color:var(--muted);display:block;font-size:11px}
+.notif{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.notif .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);margin-top:6px;flex:none}
+.notif.read .dot{background:var(--border)}
+.notif b{display:block;font-size:13px}
+.notif span{color:var(--muted);font-size:12px}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13.5px;border-bottom:1px solid var(--border)}
+.setrow select,.setrow input[type=checkbox]{accent-color:var(--violet)}
+.protectbtn{background:var(--red);color:#2a0808;border:none;font-weight:700;padding:9px 15px;border-radius:8px;cursor:pointer}
+.ghostbtn{background:transparent;color:var(--muted);border:1px solid var(--border);padding:9px 15px;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<nav class="topbar">
+<div class="brandmark">
+<svg fill="none" height="20" viewbox="0 0 24 24" width="20"><path d="M12 2l8 3.2v6c0 5.2-3.4 9.7-8 10.8-4.6-1.1-8-5.6-8-10.8v-6L12 2z" stroke="#22e6d6" stroke-width="1.7"></path><path d="M9 12.2l2 2 4-4.4" stroke="#22e6d6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path></svg>
+    DarkShield
+  </div>
+<div class="navlinks">
+<a href="#overview">Overview</a><a href="#quickscan">Quick Scan</a><a href="#threatanalysis">Threat Analysis</a>
+<a href="#history">Scan History</a><a href="#demo">Demo Scenarios</a><a href="#howitworks">How It Works</a>
+</div>
+<div class="navctrls">
+<div class="iconbtn" id="btnSearch" title="Search"><svg fill="none" height="16" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"></circle><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path></svg></div>
+<div class="iconbtn" id="btnNotif" title="Notifications"><svg fill="none" height="16" viewbox="0 0 24 24" width="16"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="currentColor" stroke-width="1.6"></path><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.6"></path></svg><span class="badge" id="notifBadge" style="display:none">0</span></div>
+<div class="iconbtn" id="btnSettings" title="Settings"><svg fill="none" height="16" viewbox="0 0 24 24" width="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"></circle><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14 3h-4l-.6 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.3-1a7 7 0 002 1.1L10 21h4l.6-2.7a7 7 0 002-1.1l2.3 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z" stroke="currentColor" stroke-width="1.2"></path></svg></div>
+<div class="avatar" id="btnProfile">DS</div>
+</div>
+</nav>
+<div class="wrap">
+<section class="hero" id="overview">
+<div>
+<div class="eyebrow">AI SECURITY PLATFORM</div>
+<h1>DARKSHIELD</h1>
+<div class="sub">AI-Powered Defense Against Phishing, Scams &amp; Social Engineering</div>
+<p>DarkShield analyzes technical threat signals and social-engineering manipulation, explains why suspicious content is dangerous, and guides users toward safer actions.</p>
+<div class="ctas">
+<button class="cta-primary" onclick="document.getElementById('quickscan').scrollIntoView({behavior:'smooth'})">Analyze a Threat</button>
+<button class="cta-secondary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Explore Demo</button>
+</div>
+<div class="pillars">
+<div class="pillar"><span class="n">01</span> Detect</div>
+<div class="pillar"><span class="n">02</span> Explain</div>
+<div class="pillar"><span class="n">03</span> Protect</div>
+</div>
+</div>
+<div class="heroviz">
+<div class="ring ring1"></div><div class="ring ring2"></div><div class="ring ring3"></div>
+<div class="node pulse" style="top:30px;left:150px"></div>
+<div class="node n2 pulse" style="top:150px;left:270px;animation-delay:.6s"></div>
+<div class="node pulse" style="top:270px;left:120px;animation-delay:1.1s"></div>
+<svg fill="none" height="70" viewbox="0 0 24 24" width="70"><path d="M12 2l8 3.2v6c0 5.2-3.4 9.7-8 10.8-4.6-1.1-8-5.6-8-10.8v-6L12 2z" fill="#8b5cf611" stroke="#a78bfa" stroke-width="1.3"></path><path d="M9 12.2l2 2 4-4.4" stroke="#22e6d6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path></svg>
+</div>
+</section>
+<section class="statusbar">
+<div class="statusitem"><div class="l"><span class="dotlive"></span>Detection Engine</div><div class="v">ONLINE</div></div>
+<div class="statusitem"><div class="l">AI Analysis</div><div class="v" style="color:var(--cyan)">READY</div></div>
+<div class="statusitem"><div class="l">Protection Layer</div><div class="v" style="color:var(--violet-2)">ACTIVE</div></div>
+<div class="statusitem"><div class="l">Last Scan</div><div class="v" id="lastScan">Never</div></div>
+</section>
+<section class="stats">
+<div class="stat"><div class="n" id="statScans">0</div><div class="l">TOTAL SCANS</div></div>
+<div class="stat threat"><div class="n" id="statThreats">0</div><div class="l">THREATS DETECTED</div></div>
+<div class="stat hi"><div class="n" id="statHigh">0</div><div class="l">HIGH / CRITICAL RISKS</div></div>
+<div class="stat safe"><div class="n" id="statSafe">0</div><div class="l">SAFE SITES</div></div>
+</section>
+<section class="panel">
+<h2>Threat Pulse — session activity</h2>
+<div class="pulseline"><span class="lbl" style="left:0">SAFE</span><span class="lbl" style="left:44%">SUSPICIOUS</span><span class="lbl" style="right:0">CRITICAL</span><div id="pulseMarkers"></div></div>
+</section>
+<section class="panel" id="quickscan">
+<h2>Quick Threat Analysis</h2>
+<div class="field"><label for="url">Website URL</label><input id="url" placeholder="e.g. luxury-outlets-store-sale82.net" type="text"/></div>
+<div class="field"><label for="content">Page text, message or email content</label><textarea id="content" placeholder="Paste the text you're checking here…" rows="5"></textarea></div>
+<label>Try Demo Scenario</label>
+<div class="demogrid">
+<div class="democard" data-ex="safe"><div class="t">Safe Website</div><div class="d">Ordinary retailer product page</div></div>
+<div class="democard" data-ex="shopping"><div class="t">Shopping Scam</div><div class="d">Fake discount + countdown + payment form</div></div>
+<div class="democard" data-ex="delivery"><div class="t">Delivery Scam</div><div class="d">"Pay to reschedule" package fee scam</div></div>
+<div class="democard" data-ex="banking"><div class="t">Banking / KYC Scam</div><div class="d">Account suspension + urgent verification</div></div>
+</div>
+<button class="go" id="analyze">Analyze with DarkShield</button>
+<div id="scanning" style="margin-top:14px">
+<div class="line">01 — Inspecting URL</div><div class="line">02 — Checking technical signals</div>
+<div class="line">03 — Detecting social-engineering patterns</div><div class="line">04 — Correlating evidence</div>
+<div class="line">05 — Calculating risk</div><div class="line">06 — Preparing protection guidance</div>
+</div>
+</section>
+<section id="threatanalysis">
+<div class="panel" id="results">
+<h2>Threat Analysis</h2>
+<div class="alerthead">
+<div class="gauge"><svg height="112" viewbox="0 0 112 112" width="112"><circle cx="56" cy="56" fill="none" r="47" stroke="#2a2050" stroke-width="10"></circle><circle cx="56" cy="56" fill="none" id="arc" r="47" stroke="#22e6d6" stroke-dasharray="295.3" stroke-dashoffset="295.3" stroke-linecap="round" stroke-width="10"></circle></svg><div class="num"><b id="scoreNum">0</b><span>RISK / 100</span></div></div>
+<div><div class="level" id="levelText">—</div><div class="sub" id="levelSub">Run a scan to see the result.</div>
+<div id="analysisMeta" style="margin-top:8px;color:var(--muted);font-size:11px;font-family:var(--mono)"></div>
+<button class="linkbtn" id="whyBtn">Why this score?</button>
+<div id="breakdown"></div>
+</div>
+</div>
+<div class="sectitle">Technical Signals</div><div class="siggrid" id="sigTech"></div>
+<div class="sectitle">Social-Engineering Signals</div><div class="siggrid" id="sigSocial"></div>
+<div class="sectitle">Suspicious Behavior</div><div class="siggrid" id="sigBehavior"></div>
+<div class="explain">
+<h3>AI Threat Analysis</h3><p id="aiExplain"></p>
+<h3>Why this matters</h3><p id="whyMatters"></p>
+<h3>What the attacker is trying to do</h3><p id="attackerGoal"></p>
+<h3>What you should do</h3><ul id="whatToDo"></ul>
+</div>
+<div class="sectitle">Manipulation Map</div>
+<div class="mmap" id="mmap"></div>
+<div class="sectitle">Attack Story</div>
+<div class="story" id="story"></div>
+<div id="safetyBox"></div>
+</div>
+</section>
+<section class="panel" id="history">
+<h2>Recent Analyses</h2>
+<table><thead><tr><th>Target</th><th>Level</th><th>Risk</th><th>Signals</th><th>Time</th><th></th></tr></thead>
+<tbody id="historyBody"></tbody></table>
+<div id="historyEmpty" style="color:var(--muted);font-size:13px;padding:10px 0">No scans yet this session.</div>
+</section>
+<section id="demo">
+<div class="eyebrow">DEMO SCENARIOS</div>
+<h2 style="font-size:24px;margin-bottom:14px">Four scripted attacks, one engine</h2>
+<div class="demogrid">
+<div class="democard" data-ex="safe"><div class="t">Safe Website</div><div class="d">Low risk control case.</div></div>
+<div class="democard" data-ex="shopping"><div class="t">Shopping Scam</div><div class="d">Discount + countdown + card form.</div></div>
+<div class="democard" data-ex="delivery"><div class="t">Delivery Scam</div><div class="d">Small redelivery fee request.</div></div>
+<div class="democard" data-ex="banking"><div class="t">Banking / KYC Scam</div><div class="d">Suspension threat + identity verification.</div></div>
+</div>
+</section>
+<section class="compare">
+<div class="panel"><h2>Normal Website</h2><ul style="margin:0;padding-left:18px;color:var(--muted);font-size:13.5px">
+<li>Consistent branding</li><li>Reasonable messaging</li><li>No unnecessary urgency</li><li>Transparent payment flow</li></ul></div>
+<div class="panel"><h2>Suspicious Website</h2><ul style="margin:0;padding-left:18px;color:var(--muted);font-size:13.5px">
+<li>Brand mismatch</li><li>Artificial urgency</li><li>Fake scarcity</li><li>Suspicious forms</li><li>Pressure to act immediately</li></ul></div>
+</section>
+<section id="howitworks">
+<div class="eyebrow">ARCHITECTURE</div>
+<h2 style="font-size:24px;margin-bottom:14px">How DarkShield Works</h2>
+<div class="mmap">
+<div class="mnode">Webpage / Message</div><span class="marrow">→</span>
+<div class="mnode">Detection Engine</div><span class="marrow">→</span>
+<div class="mnode">Structured Evidence</div><span class="marrow">→</span>
+<div class="mnode">AI Threat Analysis</div><span class="marrow">→</span>
+<div class="mnode">Risk Assessment</div><span class="marrow">→</span>
+<div class="mnode">Explain</div><span class="marrow">→</span>
+<div class="mnode">Protect</div>
+</div>
+</section>
+<section class="usp">
+<h2>Don't just detect the threat.<br/>Explain the manipulation.</h2>
+<p style="color:var(--muted);max-width:70ch">Traditional warnings tell users a link is suspicious. DarkShield combines technical threat signals, social-engineering signals, AI correlation, explainable risk assessment, and defensive guidance — so people understand <em>why</em> something is dangerous, not just that it is.</p>
+</section>
+<section>
+<div class="eyebrow">FUTURE SCOPE</div>
+<ul class="futurelist">
+<li>Browser extension with automatic webpage analysis</li><li>Phishing email detection</li>
+<li>Banking/KYC scam detection</li><li>Delivery/payment scam detection</li>
+<li>Social-media scam detection</li><li>Domain reputation &amp; threat intelligence</li>
+<li>Multilingual explanations</li><li>Cross-channel protection</li>
+<li>Advanced AI-generated scam detection</li>
+</ul>
+</section>
+</div>
+<footer><b>DARKSHIELD</b> — Detect. Explain. Protect.<br/>AI-powered defense against phishing, scams &amp; social engineering.<br/><span style="opacity:.6">Prototype for Async'26</span></footer>
+<!-- overlays -->
+<div class="overlay" id="ovSearch"><div class="modal"><h3>Search DarkShield <span class="x" onclick="closeOv('ovSearch')">ESC / CLOSE</span></h3>
+<input id="searchInput" placeholder='Try "fake urgency", "shopping scam", "critical threats"…' type="text"/><div id="searchResults" style="margin-top:10px"></div></div></div>
+<div class="overlay" id="ovNotif"><div class="modal"><h3>Notifications <span class="x" onclick="closeOv('ovNotif')">CLOSE</span></h3>
+<button class="linkbtn" onclick="markAllRead()">Mark all as read</button><div id="notifList" style="margin-top:10px"></div></div></div>
+<div class="overlay" id="ovSettings"><div class="modal"><h3>Settings <span class="x" onclick="closeOv('ovSettings')">CLOSE</span></h3>
+<div class="setrow">Appearance <select id="setTheme"><option value="dark">Dark</option><option value="darker">Darker</option><option value="contrast">High Contrast</option></select></div>
+<div class="setrow">Enable notifications <input checked="" id="setNotif" type="checkbox"/></div>
+<div class="setrow">Show technical signals <input checked="" id="setTech" type="checkbox"/></div>
+<div class="setrow">Show social-engineering signals <input checked="" id="setSocial" type="checkbox"/></div>
+<div class="setrow">Interface density <select id="setDensity"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></div>
+</div></div>
+<div class="overlay" id="ovProfile"><div class="modal"><h3>DarkShield User <span class="x" onclick="closeOv('ovProfile')">CLOSE</span></h3>
+<p style="color:var(--muted);font-size:13.5px">Security Status: <b style="color:var(--green)">Protected</b><br/>
+  Session Scans: <b id="pfScans">0</b><br/>Threats Detected: <b id="pfThreats">0</b><br/>
+  Current Mode: <b>Defensive Analysis</b></p></div></div>
+<div class="overlay" id="ovReport"><div class="modal big"><h3>Full Threat Report <span class="x" onclick="closeOv('ovReport')">CLOSE REPORT</span></h3>
+<div id="reportBody" style="font-size:13.5px;color:var(--muted)"></div>
+<button class="linkbtn" id="exportBtn" style="margin-top:12px">Export Report</button></div></div>
+<div class="overlay" id="ovProtect"><div class="modal"><h3>🛡 DarkShield Protection</h3>
+<p style="color:var(--muted);font-size:13.5px">A sensitive payment or login interaction on this page was flagged as high risk and has been blocked in this prototype.</p>
+<div style="display:flex;gap:10px"><button class="protectbtn" id="modalBlock">Keep me safe</button><button class="ghostbtn" id="modalOverride">Override once</button></div></div></div>
+<script>
+/* ---------- settings ---------- */
+const settings = Object.assign({theme:"dark",notif:true,tech:true,social:true,density:"comfortable"},
+  JSON.parse(localStorage.getItem("ds_settings")||"{}"));
+function applySettings(){
+  document.body.setAttribute("data-theme",settings.theme);
+  document.body.classList.toggle("compact",settings.density==="compact");
+  setTheme.value=settings.theme; setNotif.checked=settings.notif; setTech.checked=settings.tech;
+  setSocial.checked=settings.social; setDensity.value=settings.density;
+}
+["setTheme","setNotif","setTech","setSocial","setDensity"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",e=>{
+    settings.theme=setTheme.value; settings.notif=setNotif.checked; settings.tech=setTech.checked;
+    settings.social=setSocial.checked; settings.density=setDensity.value;
+    localStorage.setItem("ds_settings",JSON.stringify(settings)); applySettings();
+    sigTech.style.display=settings.tech?"grid":"none";
+    sigSocial.style.display=settings.social?"grid":"none";
+  });
+});
+applySettings();
+
+/* ---------- overlays ---------- */
+function openOv(id){document.getElementById(id).classList.add("open")}
+function closeOv(id){document.getElementById(id).classList.remove("open")}
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("open")}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open"))});
+btnSearch.onclick=()=>{openOv("ovSearch");searchInput.focus();renderSearch("")};
+btnNotif.onclick=()=>openOv("ovNotif");
+btnSettings.onclick=()=>openOv("ovSettings");
+btnProfile.onclick=()=>{pfScans.textContent=scans;pfThreats.textContent=threats;openOv("ovProfile")};
+
+/* ---------- search ---------- */
+const searchIndex=[
+  {label:"Shopping Scam demo",type:"Demo scenario",go:()=>runDemo("shopping")},
+  {label:"Delivery Scam demo",type:"Demo scenario",go:()=>runDemo("delivery")},
+  {label:"Banking / KYC Scam demo",type:"Demo scenario",go:()=>runDemo("banking")},
+  {label:"Safe Website demo",type:"Demo scenario",go:()=>runDemo("safe")},
+  {label:"Fake urgency",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
+  {label:"Brand impersonation",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
+  {label:"Fake scarcity",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
+  {label:"Critical threats",type:"Filter",go:()=>scrollTo("history")},
+  {label:"Recent scans",type:"Navigation",go:()=>scrollTo("history")},
+];
+function scrollTo(id){closeOv("ovSearch");document.getElementById(id).scrollIntoView({behavior:"smooth"})}
+function renderSearch(q){
+  q=q.toLowerCase();
+  const items=searchIndex.concat(history.map(h=>({label:h.target+" — "+h.level,type:"Recent scan",go:()=>{scrollTo("history")}})));
+  const matches=items.filter(i=>i.label.toLowerCase().includes(q)||i.type.toLowerCase().includes(q));
+  searchResults.innerHTML=matches.map((m,i)=>`<div class="searchresult" data-i="${i}">${m.label}<small>${m.type}</small></div>`).join("")||`<div style="color:var(--muted);font-size:13px">No matches.</div>`;
+  searchResults.querySelectorAll(".searchresult").forEach((el,i)=>el.onclick=()=>matches[i].go());
+}
+searchInput.addEventListener("input",e=>renderSearch(e.target.value));
+
+/* ---------- notifications ---------- */
+let notifications=[{title:"System",body:"DarkShield detection engine ready",read:false}];
+function pushNotif(title,body){
+  notifications.unshift({title,body,read:false});
+  renderNotif();
+}
+function renderNotif(){
+  const unread=notifications.filter(n=>!n.read).length;
+  notifBadge.style.display=unread&&settings.notif?"block":"none"; notifBadge.textContent=unread;
+  notifList.innerHTML=notifications.map(n=>`<div class="notif ${n.read?"read":""}"><div class="dot"></div><div><b>${n.title}</b><span>${n.body}</span></div></div>`).join("");
+}
+function markAllRead(){notifications.forEach(n=>n.read=true);renderNotif()}
+renderNotif();
+
+/* ---------- detection engine ---------- */
+const BRANDS=["paypal","amazon","apple","google","microsoft","netflix","instagram","facebook","chase","wellsfargo","bankofamerica","gucci","luxury","dhl","fedex","ups","hdfcbank","sbi","icici","indiapost","speedpost"];
+const BAD_TLD=[".tk",".ml",".ga",".cf",".gq",".xyz",".top",".click",".work",".support",".zip",".country",".stream",".rest"];
+function lev(a,b){const dp=Array.from({length:a.length+1},(_,i)=>[i,...Array(b.length).fill(0)]);
+  for(let j=0;j<=b.length;j++)dp[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+  return dp[a.length][b.length];}
+
+const DESCS={
+  suspicious_domain:"The domain uses patterns common in scam sites — odd TLDs, raw IPs, or heavy hyphenation.",
+  brand_mismatch:"Content imitates a known brand without matching its real registered domain.",
+  suspicious_payment_form:"A form directly requests full card details alongside other risk signals.",
+  suspicious_login:"The page asks for a password, OTP, or ID number in a way legitimate services avoid.",
+  fake_countdown:"An artificial countdown or urgent deadline pressures a quick decision.",
+  fake_scarcity:"Claims of near-sold-out stock create false pressure to act immediately.",
+  fake_social_proof:"Fabricated reviews or live-viewer counts manufacture trust and popularity.",
+  fear_pressure:"Threats of suspension or legal trouble short-circuit calm verification.",
+  suspicious_redirect:"The text references redirecting you elsewhere, often used to add tracking or malicious hops.",
+  delivery_fee_scam:"A small upfront 'redelivery' fee is a common low-friction payment-harvesting hook.",
+  malformed_url:"The supplied URL could not be parsed normally and may contain an unusual or malformed structure.",
+  ip_host:"The destination uses a raw IP address instead of a conventional domain name, which can be a phishing indicator.",
+  url_userinfo:"The URL contains user-information syntax before the host, a pattern sometimes abused to disguise the real destination.",
+  punycode:"The hostname uses an IDN/punycode form that can be used for lookalike domains.",
+  suspicious_tld:"The top-level domain has been associated with higher-risk registrations; this is only supporting evidence.",
+  heavy_hyphenation:"Multiple hyphens in the registered domain can be a supporting indicator of a lookalike or disposable domain.",
+  many_digits:"An unusual number of digits appears in the domain name.",
+  deep_subdomains:"The hostname contains several nested subdomains, which can sometimes be used to make a destination appear more legitimate.",
+  long_domain:"The registered domain is unusually long and deserves additional verification.",
+  long_url:"The full URL is unusually long, which can obscure the actual destination.",
+  encoded_url:"Multiple percent-encoded characters appear in the URL and may obscure its true structure.",
+  suspicious_redirect_param:"The URL contains a redirect-style parameter that can send users through another destination.",
+  non_https:"The destination is not using HTTPS. This alone does not prove fraud, but sensitive information should not be entered over an unsecured connection.",
+  suspicious_path:"The path or query contains login, verification, payment, account, or similar sensitive-action language.",
+  url_urgency:"The URL itself contains urgency or pressure language, which can support a social-engineering assessment.",
+  random_host:"A domain label has characteristics that make it look unusually random or machine-generated.",
+  brand_mismatch:"The hostname appears to reference a known brand without matching that brand's expected registered domain."
+};
+function buildEvidence(url,content){
+  const raw=(url||"").trim(), c=(content||"").toLowerCase();
+  const ev=[];
+  let parsed=null;
+
+  // Normalize a pasted hostname such as "example.com/login" so URL-only
+  // analysis still works even when the user omits https://.
+  try{
+    const candidate=/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)?raw:"https://"+raw;
+    parsed=new URL(candidate);
+  }catch(e){
+    if(raw) ev.push({key:"malformed_url",group:"tech",weight:15,name:"Malformed or unusual URL"});
+  }
+
+  if(parsed){
+    const hostname=parsed.hostname.toLowerCase();
+    const hostLabels=hostname.split(".").filter(Boolean);
+    const registrable=hostLabels.length>=2?hostLabels.slice(-2).join("."):hostname;
+    const domainLabel=hostLabels.length>=2?hostLabels[hostLabels.length-2]:(hostLabels[0]||"");
+    const fullUrl=parsed.href.toLowerCase();
+    const pathQuery=(parsed.pathname+" "+parsed.search).toLowerCase();
+    const subdomains=Math.max(0,hostLabels.length-2);
+
+    const badTld=BAD_TLD.some(t=>hostname.endsWith(t));
+    const isIp=/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+    const hasUserInfo=!!parsed.username;
+    const hyphens=(domainLabel.match(/-/g)||[]).length;
+    const digits=(domainLabel.match(/\d/g)||[]).length;
+    const encoded=(fullUrl.match(/%[0-9a-f]{2}/g)||[]).length;
+    const suspiciousPath=/\b(login|signin|sign-in|verify|verification|account|secure|security|update|confirm|confirmation|payment|billing|wallet|bank|kyc|password|credential|otp|claim|reward|refund)\b/i.test(pathQuery);
+    const urgencyInUrl=/\b(urgent|now|immediately|limited|expires?|suspended|alert|action-required|verify-now|claim-now)\b/i.test(pathQuery);
+    const redirectParam=/(^|[?&])(url|uri|redirect|redirect_url|return|returnurl|next|continue|dest|destination)=/i.test(parsed.search);
+    const longUrl=fullUrl.length>140;
+    const longDomain=registrable.length>28;
+    const manySubdomains=subdomains>=3;
+    const nonHttps=parsed.protocol!=="https:" && parsed.hostname!=="localhost" && !isIp;
+
+    if(isIp) ev.push({key:"ip_host",group:"tech",weight:20,name:"IP address used as host"});
+    if(hasUserInfo) ev.push({key:"url_userinfo",group:"tech",weight:15,name:"Suspicious URL user-information structure"});
+    if(hostname.startsWith("xn--")||hostLabels.some(x=>x.startsWith("xn--")))
+      ev.push({key:"punycode",group:"tech",weight:15,name:"Potential lookalike / IDN domain"});
+    if(badTld) ev.push({key:"suspicious_tld",group:"tech",weight:12,name:"Higher-risk top-level domain"});
+    if(hyphens>=2) ev.push({key:"heavy_hyphenation",group:"tech",weight:8,name:"Heavy domain hyphenation"});
+    if(digits>=3) ev.push({key:"many_digits",group:"tech",weight:6,name:"Unusual number of digits in domain"});
+    if(manySubdomains) ev.push({key:"deep_subdomains",group:"tech",weight:10,name:"Unusually deep subdomain structure"});
+    if(longDomain) ev.push({key:"long_domain",group:"tech",weight:6,name:"Unusually long domain name"});
+    if(longUrl) ev.push({key:"long_url",group:"tech",weight:5,name:"Unusually long URL"});
+    if(encoded>=2) ev.push({key:"encoded_url",group:"tech",weight:5,name:"Multiple encoded URL characters"});
+    if(redirectParam) ev.push({key:"suspicious_redirect_param",group:"tech",weight:10,name:"Suspicious redirect parameter"});
+    if(nonHttps) ev.push({key:"non_https",group:"tech",weight:8,name:"Connection is not HTTPS"});
+    if(suspiciousPath) ev.push({key:"suspicious_path",group:"tech",weight:8,name:"Sensitive or verification-related URL path"});
+    if(urgencyInUrl) ev.push({key:"url_urgency",group:"social",weight:8,name:"Urgency language in URL"});
+
+    // Look for random-looking host labels. This is only supporting evidence,
+    // never a verdict by itself.
+    const labelsForEntropy=hostLabels.filter(x=>x.length>=8);
+    for(const label of labelsForEntropy){
+      const unique=new Set(label.replace(/[^a-z0-9]/g,"")).size;
+      const vowel=(label.match(/[aeiou]/g)||[]).length;
+      const consonant=(label.match(/[bcdfghjklmnpqrstvwxyz]/g)||[]).length;
+      if(label.length>=12 && unique/Math.max(1,label.length)>0.65 && consonant>vowel*2.2){
+        ev.push({key:"random_host",group:"tech",weight:8,name:"Random-looking domain label"});
+        break;
+      }
+    }
+
+    // Possible brand impersonation / typosquatting.
+    let brand=null;
+    const brandRoots={
+      paypal:"paypal.com",amazon:"amazon.com",apple:"apple.com",google:"google.com",
+      microsoft:"microsoft.com",netflix:"netflix.com",instagram:"instagram.com",
+      facebook:"facebook.com",whatsapp:"whatsapp.com",dhl:"dhl.com",fedex:"fedex.com",
+      ups:"ups.com",hdfcbank:"hdfcbank.com",sbi:"sbi.co.in",icici:"icicibank.com",
+      indiapost:"indiapost.gov.in"
+    };
+    for(const b of Object.keys(brandRoots)){
+      const official=brandRoots[b];
+      const core=domainLabel.replace(/[^a-z0-9]/g,"");
+      const distance=lev(core,b);
+      const brandMention=hostname.includes(b);
+      const typo=(distance>0 && distance<=2 && core.length>3);
+      if((brandMention && registrable!==official) || typo){
+        brand=b; break;
+      }
+    }
+    if(brand) ev.push({key:"brand_mismatch",group:"tech",weight:20,name:"Possible brand impersonation"});
+  }
+
+  // Text/content signals. These work when the user pastes page/email/message
+  // content and can be combined with URL-level evidence.
+  if(/card number|cvv|enter your (card|payment)/i.test(c))
+    ev.push({key:"suspicious_payment_form",group:"tech",weight:20,name:"Suspicious payment request"});
+  if(/enter your password|verify your (account|identity)|otp|one[- ]time password|routing number|social security|ssn\b|pin code/i.test(c))
+    ev.push({key:"suspicious_login",group:"tech",weight:20,name:"Suspicious login request"});
+  if(/act now|expires? (in|within|today)|hurry|last chance|limited time|ends? (in|today|soon)|countdown|only \d+ minutes? left|immediately/i.test(c))
+    ev.push({key:"fake_countdown",group:"social",weight:15,name:"Fake urgency"});
+  if(/only \d+ (left|remaining|item)|while supplies last|almost gone|selling fast|limited stock/i.test(c))
+    ev.push({key:"fake_scarcity",group:"social",weight:10,name:"Fake scarcity"});
+  if(/verified purchase|\d+\s*(people|users)\s*(are\s*)?(viewing|bought)|"[^"]{10,80}"\s*[-–—]\s*\w+/i.test(c))
+    ev.push({key:"fake_social_proof",group:"social",weight:10,name:"Fake social proof"});
+  if(/account (will be |)suspended|legal action|has been (locked|compromised)|unauthorized (access|login) detected/i.test(c))
+    ev.push({key:"fear_pressure",group:"social",weight:8,name:"Fear / pressure appeal"});
+  if(/redirect|redirecting you|opens? in a new (window|tab) unexpectedly/i.test(c))
+    ev.push({key:"suspicious_redirect",group:"behavior",weight:8,name:"Suspicious redirect"});
+  if(/pay\s?(₹|rs\.?|\$)\s?\d+ to (reschedule|redeliver|release)/i.test(c))
+    ev.push({key:"delivery_fee_scam",group:"behavior",weight:12,name:"Small upfront fee request"});
+
+  return ev;
+}
+function scoreOf(ev){return Math.min(100,ev.reduce((s,x)=>s+x.weight,0))}
+function levelInfo(score){
+  if(score>=76) return{label:"CRITICAL",cls:"crit",color:"var(--red)",sub:"Multiple strong indicators of a coordinated scam."};
+  if(score>=51) return{label:"HIGH",cls:"high",color:"var(--red)",sub:"Several manipulation and technical red flags detected."};
+  if(score>=26) return{label:"MODERATE",cls:"mod",color:"var(--amber)",sub:"Some suspicious signals — proceed carefully."};
+  return{label:"LOW",cls:"safe",color:"var(--green)",sub:"No strong signals of manipulation detected."};
+}
+
+let scans=0,threats=0,highRisks=0,safeSites=0,history=JSON.parse(localStorage.getItem("ds_history")||"[]");
+function renderHistory(){
+  historyBody.innerHTML=history.slice(0,12).map((h,i)=>`<tr><td>${h.target}</td><td><span class="lvltag ${h.level}">${h.level}</span></td>
+    <td>${h.score}/100</td><td>${h.count}</td><td>${h.time}</td><td><button class="rowbtn" data-i="${i}">View Report</button></td></tr>`).join("");
+  historyEmpty.style.display=history.length?"none":"block";
+  historyBody.querySelectorAll(".rowbtn").forEach(b=>b.onclick=()=>openReport(history[+b.dataset.i]));
+  renderPulse();
+}
+function renderPulse(){
+  pulseMarkers.innerHTML=history.slice(0,20).map(h=>{
+    const color=h.score>=76?"var(--red)":h.score>=51?"var(--red)":h.score>=26?"var(--amber)":"var(--green)";
+    return `<div class="marker" style="left:${h.score}%;background:${color}" title="${h.target}: ${h.score}/100"></div>`;
+  }).join("");
+}
+renderHistory();
+
+function bumpStats(score){scans++;if(score>=26)threats++;if(score>=51)highRisks++;if(score<26)safeSites++;
+  statScans.textContent=scans;statThreats.textContent=threats;statHigh.textContent=highRisks;statSafe.textContent=safeSites;}
+
+let lastEv=[],lastLevel=null,lastTarget="";
+function runAnalysis(url,content){
+  scanning.style.display="block"; results.style.display="none";
+  scanning.querySelectorAll(".line").forEach(l=>l.classList.remove("show"));
+  scanning.querySelectorAll(".line").forEach((l,i)=>setTimeout(()=>l.classList.add("show"),i*220));
+  setTimeout(()=>{scanning.style.display="none";finishAnalysis(url,content)},1500);
+}
+function finishAnalysis(url,content){
+  const ev=buildEvidence(url,content),score=scoreOf(ev),level=levelInfo(score);
+  lastEv=ev;lastLevel=level;lastTarget=(url||"pasted content").trim()||"pasted content";
+  bumpStats(score);
+  const now=new Date().toLocaleTimeString();
+  lastScan.textContent=now;
+  history.unshift({target:lastTarget,score,level:level.label,count:ev.length,time:now,ev});
+  history=history.slice(0,30); localStorage.setItem("ds_history",JSON.stringify(history)); renderHistory();
+
+  results.style.display="block";
+  scoreNum.textContent=score;
+  const circ=2*Math.PI*47; arc.style.stroke=level.color; arc.setAttribute("stroke-dashoffset",circ-(score/100)*circ);
+  levelText.textContent=level.label+" RISK"; levelText.style.color=level.color; levelSub.textContent=level.sub;
+  const hasUrl=!!(url||"").trim(), hasContent=!!(content||"").trim();
+  analysisMeta.textContent = hasUrl && hasContent
+    ? "ANALYSIS: URL STRUCTURE + USER-PROVIDED CONTENT"
+    : hasUrl
+      ? "ANALYSIS: URL STRUCTURE • REMOTE PAGE CONTENT NOT FETCHED"
+      : "ANALYSIS: USER-PROVIDED CONTENT";
+  breakdown.style.display="none";
+  breakdown.innerHTML=ev.map(e=>`<div>+${e.weight} ${e.name}</div>`).join("")||"<div>No contributing signals.</div>";
+
+  const groups={tech:sigTech,social:sigSocial,behavior:sigBehavior};
+  for(const g in groups)groups[g].innerHTML="";
+  const counts={tech:0,social:0,behavior:0};
+  ev.forEach(e=>{counts[e.group]++;
+    groups[e.group].insertAdjacentHTML("beforeend",`<div class="sig"><div class="top">🔴 <span class="name">${e.name}</span></div><div class="desc">${DESCS[e.key]}</div></div>`);
+  });
+  if(!counts.tech)sigTech.innerHTML='<div class="clean">No technical signals detected.</div>';
+  if(!counts.social)sigSocial.innerHTML='<div class="clean">No social-engineering signals detected.</div>';
+  if(!counts.behavior)sigBehavior.innerHTML='<div class="clean">No behavioral signals detected.</div>';
+  document.querySelectorAll(".sig").forEach(s=>s.onclick=()=>s.classList.toggle("open"));
+  sigTech.style.display=settings.tech?"grid":"none"; sigSocial.style.display=settings.social?"grid":"none";
+
+  const names=ev.map(e=>e.name.toLowerCase());
+  aiExplain.textContent = ev.length
+    ? `This target shows ${ev.length} correlated signal${ev.length>1?"s":""}: ${names.join(", ")}. Together they point to a ${level.label.toLowerCase()} risk result.${hasUrl && !hasContent ? " This is a URL-level assessment; the remote webpage itself was not fetched by this standalone browser prototype." : ""}`
+    : (hasUrl && !hasContent
+      ? "No strong URL-level indicators were detected. This does not prove the site is safe; webpage content and live reputation services were not available to inspect."
+      : "No technical or social-engineering signals were found. That's a good sign, but it isn't a guarantee.");
+  whyMatters.textContent = ev.some(e=>e.group==="social") ? "The social-engineering elements are designed to create pressure so a person acts before verifying the request." : "Nothing here appears designed to manufacture urgency or false trust.";
+  attackerGoal.textContent = ev.length ? "To make you act quickly — trust a fake offer or authority, then hand over payment details or credentials before you can double-check." : "No evident manipulation goal detected in this content.";
+  whatToDo.innerHTML = ["Do not enter payment or personal information","Verify the domain independently","Leave the page if uncertain"].map(t=>`<li>${t}</li>`).join("");
+
+  const mapKeys=[["fake_countdown","Fake Offer"],["fake_countdown","Urgency"],["fake_scarcity","Scarcity"],["fake_social_proof","Social Proof"],["brand_mismatch","Trust / Impulse"],["suspicious_payment_form","Payment Request"]];
+  mmap.innerHTML=mapKeys.map(([k,label],i)=>{
+    const hit=ev.some(e=>e.key===k)||(k==="suspicious_payment_form"&&ev.some(e=>e.key==="suspicious_login"));
+    return `<div class="mnode ${hit?'hit':''}" title="${hit?DESCS[k]||label:'Not detected'}">${label}</div>`+(i<mapKeys.length-1?'<span class="marrow">→</span>':'');
+  }).join("");
+
+  const storySteps=["User lands on the target","A fake offer or notice establishes an opening",
+    ev.some(e=>e.key==="fake_countdown")?"An urgent countdown pressures a fast decision":"No countdown pressure detected",
+    ev.some(e=>e.key==="fake_social_proof")?"Fabricated reviews build false trust":"No fake social proof detected",
+    ev.some(e=>e.key==="suspicious_payment_form"||e.key==="suspicious_login")?"Sensitive payment or login information is requested":"No sensitive information requested",
+    "DarkShield intervenes with a risk explanation"];
+  story.innerHTML=storySteps.map((s,i)=>`<div class="storystep"><b>0${i+1}</b>${s}</div>`).join("");
+
+  if(score>=51){
+    safetyBox.innerHTML=`<div class="safety"><h3>⚠ DarkShield Safety Mode</h3><p>Sensitive interaction detected.</p>
+      <ul><li>Do not enter credentials</li><li>Do not submit payment information</li><li>Verify the domain independently</li><li>Leave the page if uncertain</li></ul>
+      <button id="leaveBtn">Leave Site</button></div>`;
+    document.getElementById("leaveBtn").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
+    pushNotif("New "+level.label.toLowerCase()+" threat detected",lastTarget+" — Risk "+score+"/100");
+    if(ev.some(e=>e.key==="suspicious_payment_form"||e.key==="suspicious_login")) openOv("ovProtect"),pushNotif("Protection triggered","Sensitive payment interaction flagged");
+  } else { safetyBox.innerHTML=""; pushNotif("Scan completed",lastTarget+" analysis completed — "+level.label+" risk"); }
+}
+whyBtn.onclick=()=>breakdown.style.display=breakdown.style.display==="none"?"block":"none";
+document.getElementById("modalBlock").onclick=()=>closeOv("ovProtect");
+document.getElementById("modalOverride").onclick=()=>closeOv("ovProtect");
+
+function openReport(h){
+  reportBody.innerHTML=`<p><b>Target:</b> ${h.target}<br><b>Risk score:</b> ${h.score}/100<br><b>Level:</b> ${h.level}<br><b>Signals:</b> ${h.count}</p>
+    <p><b>Evidence:</b></p><ul>${h.ev.map(e=>`<li>+${e.weight} ${e.name}</li>`).join("")||"<li>None</li>"}</ul>`;
+  exportBtn.onclick=()=>{
+    const blob=new Blob([`DarkShield Threat Report\nTarget: ${h.target}\nRisk: ${h.score}/100 (${h.level})\n\n`+
+      h.ev.map(e=>`+${e.weight} ${e.name}`).join("\n")],{type:"text/plain"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="darkshield-report.txt"; a.click();
+  };
+  openOv("ovReport");
+}
+
+const EXAMPLES={
+  shopping:{url:"luxury-outlets-store-sale82.net",content:`LUXURY MEGA DEALS — AirPods Pro style earbuds ₹1,999 (was ₹9,999)\nOnly 2 left! Ends in 04:12\nEnter your card number, expiry, CVV to secure this price\n"Arrived in 2 days, authentic!" Verified Purchase — 23 people are viewing this.`},
+  banking:{url:"secure-verify-hdfcbank-alerts.xyz",content:`Dear Customer, unusual activity has been detected on your account and it has been locked. Verify your identity immediately or your account will be suspended today. Enter your password and OTP to restore access.`},
+  delivery:{url:"track-parcel-redelivery-in.top",content:`Your package could not be delivered. Pay ₹25 to reschedule delivery. Action required immediately or your parcel will be returned. Enter your card number to release your package.`},
+  safe:{url:"https://www.example-retailer.com/product/running-shoes",content:`Trail Runner 3.0 — $89\nIn stock, ships in 2-3 business days.\nFree returns within 30 days. Rated 4.6/5 from 1,204 reviews.`}
+};
+function runDemo(key){const ex=EXAMPLES[key];url.value=ex.url;content.value=ex.content;
+  document.getElementById("quickscan").scrollIntoView({behavior:"smooth"});}
+document.querySelectorAll(".democard").forEach(c=>c.onclick=()=>runDemo(c.dataset.ex));
+analyze.onclick=()=>runAnalysis(url.value,content.value);
+</script>
+</body>
+</html>
