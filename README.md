@@ -11,7 +11,7 @@ Instead of only displaying a warning, DarkShield combines detected evidence into
 ## 🚀 Live Demo
 
 **Live Demo:**
-https://rococo-tulumba-594198.netlify.app/
+https://eloquent-gumption-407aad.netlify.app/
 
 **GitHub:**
 https://github.com/Vandana-s-h/DarkShield-
