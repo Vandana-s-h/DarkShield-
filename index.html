@@ -211,7 +211,7 @@ footer b{color:var(--text)}
   </div>
 <div class="navlinks">
 <a href="#overview">Overview</a><a href="#quickscan">Quick Scan</a><a href="#threatanalysis">Threat Analysis</a>
-<a href="#history">Scan History</a><a href="#demo">Demo Scenarios</a><a href="#howitworks">How It Works</a>
+<a href="#history">Scan History</a><a href="#logscan">Import Log</a><a href="#demo">Demo Scenarios</a><a href="#howitworks">How It Works</a>
 </div>
 <div class="navctrls">
 <div class="iconbtn" id="btnSearch" title="Search"><svg fill="none" height="16" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"></circle><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path></svg></div>
@@ -247,7 +247,7 @@ footer b{color:var(--text)}
 </section>
 <section class="statusbar">
 <div class="statusitem"><div class="l"><span class="dotlive"></span>Detection Engine</div><div class="v">ONLINE</div></div>
-<div class="statusitem"><div class="l">AI Analysis</div><div class="v" style="color:var(--cyan)">READY</div></div>
+<div class="statusitem"><div class="l">Explanation Engine</div><div class="v" style="color:var(--cyan)">READY</div></div>
 <div class="statusitem"><div class="l">Protection Layer</div><div class="v" style="color:var(--violet-2)">ACTIVE</div></div>
 <div class="statusitem"><div class="l">Last Scan</div><div class="v" id="lastScan">Never</div></div>
 </section>
@@ -294,7 +294,7 @@ footer b{color:var(--text)}
 <div class="sectitle">Social-Engineering Signals</div><div class="siggrid" id="sigSocial"></div>
 <div class="sectitle">Suspicious Behavior</div><div class="siggrid" id="sigBehavior"></div>
 <div class="explain">
-<h3>AI Threat Analysis</h3><p id="aiExplain"></p>
+<h3>Threat Explanation</h3><p id="aiExplain"></p>
 <h3>Why this matters</h3><p id="whyMatters"></p>
 <h3>What the attacker is trying to do</h3><p id="attackerGoal"></p>
 <h3>What you should do</h3><ul id="whatToDo"></ul>
@@ -311,6 +311,20 @@ footer b{color:var(--text)}
 <table><thead><tr><th>Target</th><th>Level</th><th>Risk</th><th>Signals</th><th>Time</th><th></th></tr></thead>
 <tbody id="historyBody"></tbody></table>
 <div id="historyEmpty" style="color:var(--muted);font-size:13px;padding:10px 0">No scans yet this session.</div>
+</section>
+<section class="panel" id="logscan">
+<h2>Import DNS / Browser Log &mdash; Observe &rarr; Detect &rarr; Explain &rarr; Respond</h2>
+<p style="color:var(--muted);font-size:13px;margin:0 0 12px">Paste domains (one per line) or upload a .txt/.csv (Pi-hole query logs, hosts-style lists and browser-history exports work; the domain column is auto-detected). Analysis is URL-structure only and runs locally in your browser. Only scan your own or sample data.</p>
+<textarea id="logInput" rows="6" placeholder="e.g. secure-verify-hdfcbank-alerts.xyz"></textarea>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0">
+<button class="linkbtn" id="logSample" style="margin:0">Load sample log (demo data)</button>
+<label class="linkbtn" style="margin:0;display:inline-block;cursor:pointer">Upload file<input type="file" id="logFile" accept=".txt,.csv,.log" style="display:none"/></label>
+<button class="linkbtn" id="logRun" style="margin:0">Scan log</button>
+<select id="logThresh" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:6px"><option value="26">Blocklist: Moderate and above</option><option value="51">Blocklist: High and above</option></select>
+<button class="linkbtn" id="logExport" style="margin:0;display:none">Download blocklist</button>
+</div>
+<div id="logSummary" style="font-size:13px;color:var(--muted);margin-bottom:8px"></div>
+<table><thead><tr><th>Domain</th><th>Level</th><th>Risk</th><th>Signals</th><th></th></tr></thead><tbody id="logBody"></tbody></table>
 </section>
 <section id="demo">
 <div class="eyebrow">DEMO SCENARIOS</div>
@@ -335,7 +349,7 @@ footer b{color:var(--text)}
 <div class="mnode">Webpage / Message</div><span class="marrow">→</span>
 <div class="mnode">Detection Engine</div><span class="marrow">→</span>
 <div class="mnode">Structured Evidence</div><span class="marrow">→</span>
-<div class="mnode">AI Threat Analysis</div><span class="marrow">→</span>
+<div class="mnode">Explanation Engine</div><span class="marrow">→</span>
 <div class="mnode">Risk Assessment</div><span class="marrow">→</span>
 <div class="mnode">Explain</div><span class="marrow">→</span>
 <div class="mnode">Protect</div>
@@ -343,7 +357,7 @@ footer b{color:var(--text)}
 </section>
 <section class="usp">
 <h2>Don't just detect the threat.<br/>Explain the manipulation.</h2>
-<p style="color:var(--muted);max-width:70ch">Traditional warnings tell users a link is suspicious. DarkShield combines technical threat signals, social-engineering signals, AI correlation, explainable risk assessment, and defensive guidance — so people understand <em>why</em> something is dangerous, not just that it is.</p>
+<p style="color:var(--muted);max-width:70ch">Traditional warnings tell users a link is suspicious. DarkShield combines technical threat signals, social-engineering signals, rule-based correlation, explainable risk assessment, and defensive guidance — so people understand <em>why</em> something is dangerous, not just that it is.</p>
 </section>
 <section>
 <div class="eyebrow">FUTURE SCOPE</div>
@@ -381,8 +395,10 @@ footer b{color:var(--text)}
 <div style="display:flex;gap:10px"><button class="protectbtn" id="modalBlock">Keep me safe</button><button class="ghostbtn" id="modalOverride">Override once</button></div></div></div>
 <script>
 /* ---------- settings ---------- */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v&&typeof v==="object"?v:d}catch(e){return d}}
 const settings = Object.assign({theme:"dark",notif:true,tech:true,social:true,density:"comfortable"},
-  JSON.parse(localStorage.getItem("ds_settings")||"{}"));
+  load("ds_settings",{}));
 function applySettings(){
   document.body.setAttribute("data-theme",settings.theme);
   document.body.classList.toggle("compact",settings.density==="compact");
@@ -416,18 +432,18 @@ const searchIndex=[
   {label:"Delivery Scam demo",type:"Demo scenario",go:()=>runDemo("delivery")},
   {label:"Banking / KYC Scam demo",type:"Demo scenario",go:()=>runDemo("banking")},
   {label:"Safe Website demo",type:"Demo scenario",go:()=>runDemo("safe")},
-  {label:"Fake urgency",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
-  {label:"Brand impersonation",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
-  {label:"Fake scarcity",type:"Detection signal",go:()=>scrollTo("threatanalysis")},
-  {label:"Critical threats",type:"Filter",go:()=>scrollTo("history")},
-  {label:"Recent scans",type:"Navigation",go:()=>scrollTo("history")},
+  {label:"Fake urgency",type:"Detection signal",go:()=>goToSection("threatanalysis")},
+  {label:"Brand impersonation",type:"Detection signal",go:()=>goToSection("threatanalysis")},
+  {label:"Fake scarcity",type:"Detection signal",go:()=>goToSection("threatanalysis")},
+  {label:"Critical threats",type:"Filter",go:()=>goToSection("history")},
+  {label:"Recent scans",type:"Navigation",go:()=>goToSection("history")},
 ];
-function scrollTo(id){closeOv("ovSearch");document.getElementById(id).scrollIntoView({behavior:"smooth"})}
+function goToSection(id){closeOv("ovSearch");document.getElementById(id).scrollIntoView({behavior:"smooth"})}
 function renderSearch(q){
   q=q.toLowerCase();
-  const items=searchIndex.concat(history.map(h=>({label:h.target+" — "+h.level,type:"Recent scan",go:()=>{scrollTo("history")}})));
+  const items=searchIndex.concat(history.map(h=>({label:h.target+" — "+h.level,type:"Recent scan",go:()=>{goToSection("history")}})));
   const matches=items.filter(i=>i.label.toLowerCase().includes(q)||i.type.toLowerCase().includes(q));
-  searchResults.innerHTML=matches.map((m,i)=>`<div class="searchresult" data-i="${i}">${m.label}<small>${m.type}</small></div>`).join("")||`<div style="color:var(--muted);font-size:13px">No matches.</div>`;
+  searchResults.innerHTML=matches.map((m,i)=>`<div class="searchresult" data-i="${i}">${esc(m.label)}<small>${esc(m.type)}</small></div>`).join("")||`<div style="color:var(--muted);font-size:13px">No matches.</div>`;
   searchResults.querySelectorAll(".searchresult").forEach((el,i)=>el.onclick=()=>matches[i].go());
 }
 searchInput.addEventListener("input",e=>renderSearch(e.target.value));
@@ -441,7 +457,7 @@ function pushNotif(title,body){
 function renderNotif(){
   const unread=notifications.filter(n=>!n.read).length;
   notifBadge.style.display=unread&&settings.notif?"block":"none"; notifBadge.textContent=unread;
-  notifList.innerHTML=notifications.map(n=>`<div class="notif ${n.read?"read":""}"><div class="dot"></div><div><b>${n.title}</b><span>${n.body}</span></div></div>`).join("");
+  notifList.innerHTML=notifications.map(n=>`<div class="notif ${n.read?"read":""}"><div class="dot"></div><div><b>${esc(n.title)}</b><span>${esc(n.body)}</span></div></div>`).join("");
 }
 function markAllRead(){notifications.forEach(n=>n.read=true);renderNotif()}
 renderNotif();
@@ -464,7 +480,8 @@ const DESCS={
   fake_social_proof:"Fabricated reviews or live-viewer counts manufacture trust and popularity.",
   fear_pressure:"Threats of suspension or legal trouble short-circuit calm verification.",
   suspicious_redirect:"The text references redirecting you elsewhere, often used to add tracking or malicious hops.",
-  delivery_fee_scam:"A small upfront 'redelivery' fee is a common low-friction payment-harvesting hook.",
+  prize_lure:"Unexpected prizes or rewards are a classic hook to get you to click or share details.",
+delivery_fee_scam:"A small upfront 'redelivery' fee is a common low-friction payment-harvesting hook.",
   malformed_url:"The supplied URL could not be parsed normally and may contain an unusual or malformed structure.",
   ip_host:"The destination uses a raw IP address instead of a conventional domain name, which can be a phishing indicator.",
   url_userinfo:"The URL contains user-information syntax before the host, a pattern sometimes abused to disguise the real destination.",
@@ -500,11 +517,11 @@ function buildEvidence(url,content){
   if(parsed){
     const hostname=parsed.hostname.toLowerCase();
     const hostLabels=hostname.split(".").filter(Boolean);
-    const registrable=hostLabels.length>=2?hostLabels.slice(-2).join("."):hostname;
-    const domainLabel=hostLabels.length>=2?hostLabels[hostLabels.length-2]:(hostLabels[0]||"");
+    const two=hostLabels.length>=3&&hostLabels[hostLabels.length-1].length===2&&["co","com","gov","org","net","ac","edu","nic"].includes(hostLabels[hostLabels.length-2]);const registrable=hostLabels.length>=2?hostLabels.slice(two?-3:-2).join("."):hostname;
+    const domainLabel=hostLabels.length>=2?hostLabels[hostLabels.length-(two?3:2)]:(hostLabels[0]||"");
     const fullUrl=parsed.href.toLowerCase();
     const pathQuery=(parsed.pathname+" "+parsed.search).toLowerCase();
-    const subdomains=Math.max(0,hostLabels.length-2);
+    const subdomains=Math.max(0,hostLabels.length-(two?3:2));
 
     const badTld=BAD_TLD.some(t=>hostname.endsWith(t));
     const isIp=/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname);
@@ -562,9 +579,9 @@ function buildEvidence(url,content){
       const official=brandRoots[b];
       const core=domainLabel.replace(/[^a-z0-9]/g,"");
       const distance=lev(core,b);
-      const brandMention=hostname.includes(b);
-      const typo=(distance>0 && distance<=2 && core.length>3);
-      if((brandMention && registrable!==official) || typo){
+      const owns=(registrable===official);const norms=[domainLabel.replace(/1/g,"l").replace(/0/g,"o").replace(/3/g,"e").replace(/5/g,"s"),domainLabel.replace(/1/g,"i").replace(/0/g,"o").replace(/3/g,"e").replace(/5/g,"s")];const brandMention=hostLabels.some(l=>l.split("-").includes(b))||norms.some(n=>n.split("-").includes(b));
+      const typo=(distance>0 && distance<=(b.length>=8?2:1) && core.length>3 && b.length>=5);
+      if(!owns && (brandMention || typo)){
         brand=b; break;
       }
     }
@@ -575,9 +592,9 @@ function buildEvidence(url,content){
   // content and can be combined with URL-level evidence.
   if(/card number|cvv|enter your (card|payment)/i.test(c))
     ev.push({key:"suspicious_payment_form",group:"tech",weight:20,name:"Suspicious payment request"});
-  if(/enter your password|verify your (account|identity)|otp|one[- ]time password|routing number|social security|ssn\b|pin code/i.test(c))
+  if(/enter your password|verify your (account|identity)|\botp\b|one[- ]time password|routing number|social security|ssn\b|pin code/i.test(c))
     ev.push({key:"suspicious_login",group:"tech",weight:20,name:"Suspicious login request"});
-  if(/act now|expires? (in|within|today)|hurry|last chance|limited time|ends? (in|today|soon)|countdown|only \d+ minutes? left|immediately/i.test(c))
+  if(/act now|expires? (in|within|today)|hurry|last chance|limited time|ends? (in|today|soon)|countdown|only \d+ minutes? left|(act|respond|verify|pay|update|confirm|reply)[^.]{0,30}\bimmediately|immediately (or|else)|urgent(ly)?/i.test(c))
     ev.push({key:"fake_countdown",group:"social",weight:15,name:"Fake urgency"});
   if(/only \d+ (left|remaining|item)|while supplies last|almost gone|selling fast|limited stock/i.test(c))
     ev.push({key:"fake_scarcity",group:"social",weight:10,name:"Fake scarcity"});
@@ -585,7 +602,9 @@ function buildEvidence(url,content){
     ev.push({key:"fake_social_proof",group:"social",weight:10,name:"Fake social proof"});
   if(/account (will be |)suspended|legal action|has been (locked|compromised)|unauthorized (access|login) detected/i.test(c))
     ev.push({key:"fear_pressure",group:"social",weight:8,name:"Fear / pressure appeal"});
-  if(/redirect|redirecting you|opens? in a new (window|tab) unexpectedly/i.test(c))
+  if(/congratulations|you('ve| have) won|claim your (prize|reward|gift)|click here to claim|lucky (winner|draw)/i.test(c))
+ev.push({key:"prize_lure",group:"social",weight:30,name:"Prize / reward lure"});
+if(/redirect|redirecting you|opens? in a new (window|tab) unexpectedly/i.test(c))
     ev.push({key:"suspicious_redirect",group:"behavior",weight:8,name:"Suspicious redirect"});
   if(/pay\s?(₹|rs\.?|\$)\s?\d+ to (reschedule|redeliver|release)/i.test(c))
     ev.push({key:"delivery_fee_scam",group:"behavior",weight:12,name:"Small upfront fee request"});
@@ -600,9 +619,9 @@ function levelInfo(score){
   return{label:"LOW",cls:"safe",color:"var(--green)",sub:"No strong signals of manipulation detected."};
 }
 
-let scans=0,threats=0,highRisks=0,safeSites=0,history=JSON.parse(localStorage.getItem("ds_history")||"[]");
+let scans=0,threats=0,highRisks=0,safeSites=0,history=load("ds_history",[]);
 function renderHistory(){
-  historyBody.innerHTML=history.slice(0,12).map((h,i)=>`<tr><td>${h.target}</td><td><span class="lvltag ${h.level}">${h.level}</span></td>
+  historyBody.innerHTML=history.slice(0,12).map((h,i)=>`<tr><td>${esc(h.target)}</td><td><span class="lvltag ${h.level}">${h.level}</span></td>
     <td>${h.score}/100</td><td>${h.count}</td><td>${h.time}</td><td><button class="rowbtn" data-i="${i}">View Report</button></td></tr>`).join("");
   historyEmpty.style.display=history.length?"none":"block";
   historyBody.querySelectorAll(".rowbtn").forEach(b=>b.onclick=()=>openReport(history[+b.dataset.i]));
@@ -611,7 +630,7 @@ function renderHistory(){
 function renderPulse(){
   pulseMarkers.innerHTML=history.slice(0,20).map(h=>{
     const color=h.score>=76?"var(--red)":h.score>=51?"var(--red)":h.score>=26?"var(--amber)":"var(--green)";
-    return `<div class="marker" style="left:${h.score}%;background:${color}" title="${h.target}: ${h.score}/100"></div>`;
+    return `<div class="marker" style="left:${h.score}%;background:${color}" title="${esc(h.target)}: ${h.score}/100"></div>`;
   }).join("");
 }
 renderHistory();
@@ -635,10 +654,10 @@ function finishAnalysis(url,content){
   history.unshift({target:lastTarget,score,level:level.label,count:ev.length,time:now,ev});
   history=history.slice(0,30); localStorage.setItem("ds_history",JSON.stringify(history)); renderHistory();
 
-  results.style.display="block";
+  results.style.display="block";results.scrollIntoView({behavior:"smooth",block:"start"});
   scoreNum.textContent=score;
   const circ=2*Math.PI*47; arc.style.stroke=level.color; arc.setAttribute("stroke-dashoffset",circ-(score/100)*circ);
-  levelText.textContent=level.label+" RISK"; levelText.style.color=level.color; levelSub.textContent=level.sub;
+  levelText.textContent=level.label+" RISK"; levelText.style.color=level.color;const brandWarning=ev.some(e=>e.key==="brand_mismatch");levelSub.textContent=(score<26 && brandWarning)?"A possible brand mismatch was detected. Verify this domain before trusting it.":level.sub;
   const hasUrl=!!(url||"").trim(), hasContent=!!(content||"").trim();
   analysisMeta.textContent = hasUrl && hasContent
     ? "ANALYSIS: URL STRUCTURE + USER-PROVIDED CONTENT"
@@ -668,7 +687,7 @@ function finishAnalysis(url,content){
       : "No technical or social-engineering signals were found. That's a good sign, but it isn't a guarantee.");
   whyMatters.textContent = ev.some(e=>e.group==="social") ? "The social-engineering elements are designed to create pressure so a person acts before verifying the request." : "Nothing here appears designed to manufacture urgency or false trust.";
   attackerGoal.textContent = ev.length ? "To make you act quickly — trust a fake offer or authority, then hand over payment details or credentials before you can double-check." : "No evident manipulation goal detected in this content.";
-  whatToDo.innerHTML = ["Do not enter payment or personal information","Verify the domain independently","Leave the page if uncertain"].map(t=>`<li>${t}</li>`).join("");
+  whatToDo.innerHTML = (score>=26?["Do not enter payment or personal information","Verify the domain independently","Leave the page if uncertain"]:ev.some(e=>e.key==="brand_mismatch")?["Verify the domain through the official website for the brand","Do not enter sensitive information until verified","A possible brand mismatch is a warning, not proof of fraud"]:["No strong red flags found - still verify the domain before entering sensitive details","Prefer official apps or bookmarked sites for banking and shopping"]).map(t=>`<li>${t}</li>`).join("");
 
   const mapKeys=[["fake_countdown","Fake Offer"],["fake_countdown","Urgency"],["fake_scarcity","Scarcity"],["fake_social_proof","Social Proof"],["brand_mismatch","Trust / Impulse"],["suspicious_payment_form","Payment Request"]];
   mmap.innerHTML=mapKeys.map(([k,label],i)=>{
@@ -676,7 +695,7 @@ function finishAnalysis(url,content){
     return `<div class="mnode ${hit?'hit':''}" title="${hit?DESCS[k]||label:'Not detected'}">${label}</div>`+(i<mapKeys.length-1?'<span class="marrow">→</span>':'');
   }).join("");
 
-  const storySteps=["User lands on the target","A fake offer or notice establishes an opening",
+  const storySteps=["User lands on the target",(ev.length?"A fake offer or notice establishes an opening":"No manipulative opening detected"),
     ev.some(e=>e.key==="fake_countdown")?"An urgent countdown pressures a fast decision":"No countdown pressure detected",
     ev.some(e=>e.key==="fake_social_proof")?"Fabricated reviews build false trust":"No fake social proof detected",
     ev.some(e=>e.key==="suspicious_payment_form"||e.key==="suspicious_login")?"Sensitive payment or login information is requested":"No sensitive information requested",
@@ -697,7 +716,7 @@ document.getElementById("modalBlock").onclick=()=>closeOv("ovProtect");
 document.getElementById("modalOverride").onclick=()=>closeOv("ovProtect");
 
 function openReport(h){
-  reportBody.innerHTML=`<p><b>Target:</b> ${h.target}<br><b>Risk score:</b> ${h.score}/100<br><b>Level:</b> ${h.level}<br><b>Signals:</b> ${h.count}</p>
+  reportBody.innerHTML=`<p><b>Target:</b> ${esc(h.target)}<br><b>Risk score:</b> ${h.score}/100<br><b>Level:</b> ${h.level}<br><b>Signals:</b> ${h.count}</p>
     <p><b>Evidence:</b></p><ul>${h.ev.map(e=>`<li>+${e.weight} ${e.name}</li>`).join("")||"<li>None</li>"}</ul>`;
   exportBtn.onclick=()=>{
     const blob=new Blob([`DarkShield Threat Report\nTarget: ${h.target}\nRisk: ${h.score}/100 (${h.level})\n\n`+
@@ -713,10 +732,44 @@ const EXAMPLES={
   delivery:{url:"track-parcel-redelivery-in.top",content:`Your package could not be delivered. Pay ₹25 to reschedule delivery. Action required immediately or your parcel will be returned. Enter your card number to release your package.`},
   safe:{url:"https://www.example-retailer.com/product/running-shoes",content:`Trail Runner 3.0 — $89\nIn stock, ships in 2-3 business days.\nFree returns within 30 days. Rated 4.6/5 from 1,204 reviews.`}
 };
-function runDemo(key){const ex=EXAMPLES[key];url.value=ex.url;content.value=ex.content;
+function runDemo(key){closeOv("ovSearch");const ex=EXAMPLES[key];url.value=ex.url;content.value=ex.content;
   document.getElementById("quickscan").scrollIntoView({behavior:"smooth"});}
 document.querySelectorAll(".democard").forEach(c=>c.onclick=()=>runDemo(c.dataset.ex));
 analyze.onclick=()=>runAnalysis(url.value,content.value);
+
+/* ---------- DNS / browser log import ---------- */
+const SAMPLE_LOG=["www.google.com","github.com","www.amazon.in","www.sbi.co.in","groups.google.com","web.whatsapp.com","en.wikipedia.org","netflix.com","secure-verify-hdfcbank-alerts.xyz","paypa1-secure-login.com","track-parcel-redelivery-in.top","amazon.account-verify.top","http://185.234.12.9/login/verify"];
+let logResults=[];
+function hostOf(d){try{return new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(d)?d:"https://"+d).hostname}catch(e){return d}}
+function parseLog(text){
+const out=new Set();
+text.split(/\r?\n/).forEach(line=>{
+line=line.trim();
+if(!line||line[0]==="#")return;
+const cand=line.split(/[\s,;]+/).map(p=>p.replace(/^"+|"+$/g,"")).find(p=>/[a-z]/i.test(p)&&p.includes(".")&&!/^\d{1,3}(\.\d{1,3}){3}$/.test(p));
+if(cand)out.add(cand.toLowerCase());
+});
+return [...out].slice(0,500);
+}
+function runLog(){
+const min=+logThresh.value;
+logResults=parseLog(logInput.value).map(d=>{const ev=buildEvidence(d,""),score=scoreOf(ev);return{d,host:hostOf(d),ev,score,level:levelInfo(score).label}}).sort((a,b)=>b.score-a.score);
+const flagged=logResults.filter(r=>r.score>=min);
+logSummary.innerHTML=logResults.length?`<b>${logResults.length}</b> unique domains &middot; <b style="color:var(--red)">${flagged.length}</b> flagged at threshold &ge;${min} &middot; ${logResults.filter(r=>r.score<26).length} low risk`:"No domains found in the input.";
+logBody.innerHTML=logResults.map((r,i)=>`<tr><td>${esc(r.d)}</td><td><span class="lvltag ${r.level}">${r.level}</span></td><td>${r.score}/100</td><td style="color:var(--muted)">${esc(r.ev.map(e=>e.name).join(", ")||"-")}</td><td><button class="rowbtn" data-i="${i}">Explain</button></td></tr>`).join("");
+logBody.querySelectorAll(".rowbtn").forEach(b=>b.onclick=()=>{const r=logResults[+b.dataset.i];openReport({target:r.d,score:r.score,level:r.level,count:r.ev.length,ev:r.ev})});
+logExport.style.display=flagged.length?"inline-block":"none";
+}
+logExport.onclick=()=>{
+const min=+logThresh.value;
+const hosts=[...new Set(logResults.filter(r=>r.score>=min).map(r=>r.host))].filter(h=>!/^\d{1,3}(\.\d{1,3}){3}$/.test(h));
+const blob=new Blob(["# DarkShield blocklist (heuristic, generated locally) - review before loading into Pi-hole/AdGuard\n"+hosts.map(h=>"0.0.0.0 "+h).join("\n")+"\n"],{type:"text/plain"});
+const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="darkshield-blocklist.txt";a.click();
+};
+logThresh.onchange=()=>{if(logResults.length)runLog()};
+logSample.onclick=()=>{logInput.value=SAMPLE_LOG.join("\n");runLog()};
+logRun.onclick=runLog;
+logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{logInput.value=String(r.result).slice(0,200000);runLog()};r.readAsText(f)};
 </script>
 </body>
 </html>
