@@ -1,0 +1,362 @@
+#darkshield-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 340px;
+  z-index: 2147483647;
+  font-family: Arial, sans-serif;
+}
+
+.darkshield-card {
+  background: #0b1020;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.darkshield-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.darkshield-logo {
+  font-size: 28px;
+}
+
+.darkshield-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.darkshield-subtitle {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 3px;
+}
+
+#darkshield-close {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.darkshield-status {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  opacity: 0.75;
+}
+
+.darkshield-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  margin-right: 6px;
+}
+
+.darkshield-score {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.darkshield-score-number {
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.darkshield-score-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+.darkshield-message {
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.darkshield-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.darkshield-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  opacity: 0.55;
+  margin-bottom: 5px;
+}
+
+.darkshield-footer {
+  margin-top: 16px;
+  font-size: 10px;
+  opacity: 0.45;
+  line-height: 1.4;
+}
+
+/* =========================================
+   DARKSHIELD SECURITY OVERLAY
+   ========================================= */
+
+#darkshield-overlay {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  width: 370px !important;
+  max-height: calc(100vh - 40px) !important;
+  z-index: 2147483647 !important;
+  overflow-y: auto !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.darkshield-card {
+  background: #090d18 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  border-radius: 18px !important;
+  padding: 18px !important;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.55) !important;
+}
+
+.darkshield-card.critical {
+  border-color: rgba(239,68,68,0.6) !important;
+}
+
+.darkshield-card.high {
+  border-color: rgba(249,115,22,0.6) !important;
+}
+
+.darkshield-card.moderate {
+  border-color: rgba(234,179,8,0.6) !important;
+}
+
+.darkshield-card.low {
+  border-color: rgba(34,197,94,0.45) !important;
+}
+
+.darkshield-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.darkshield-logo {
+  font-size: 28px !important;
+}
+
+.darkshield-brand {
+  flex: 1 !important;
+}
+
+.darkshield-title {
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1.5px !important;
+}
+
+.darkshield-subtitle {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+  letter-spacing: 1.2px !important;
+  opacity: 0.5 !important;
+}
+
+.darkshield-close {
+  border: none !important;
+  background: transparent !important;
+  color: white !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  opacity: 0.6 !important;
+}
+
+.darkshield-close:hover {
+  opacity: 1 !important;
+}
+
+.darkshield-status {
+  margin-top: 14px !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  opacity: 0.65 !important;
+}
+
+.darkshield-status-dot {
+  display: inline-block !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #22c55e !important;
+  margin-right: 6px !important;
+}
+
+.darkshield-risk {
+  text-align: center !important;
+  padding: 18px 0 14px !important;
+}
+
+.darkshield-risk-icon {
+  font-size: 18px !important;
+}
+
+.darkshield-risk-score {
+  font-size: 48px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  margin-top: 4px !important;
+}
+
+.darkshield-risk-score span {
+  font-size: 16px !important;
+  opacity: 0.4 !important;
+}
+
+.darkshield-risk-label {
+  margin-top: 6px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1.5px !important;
+  opacity: 0.7 !important;
+}
+
+.darkshield-divider {
+  height: 1px !important;
+  background: rgba(255,255,255,0.1) !important;
+}
+
+.darkshield-section {
+  margin-top: 15px !important;
+}
+
+.darkshield-section-title {
+  margin-bottom: 7px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1.1px !important;
+  opacity: 0.45 !important;
+}
+
+.darkshield-signal {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: flex-start !important;
+  margin-top: 5px !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+.darkshield-signal.danger span:first-child,
+.darkshield-signal.warning span:first-child {
+  color: #fb7185 !important;
+}
+
+.darkshield-signal.safe span:first-child {
+  color: #4ade80 !important;
+}
+
+.darkshield-intent {
+  margin-top: 16px !important;
+  padding: 12px !important;
+  border-radius: 10px !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.darkshield-intent-value {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.darkshield-manipulation {
+  margin-top: 16px !important;
+  padding: 12px !important;
+  border-radius: 10px !important;
+  background: rgba(255,255,255,0.025) !important;
+}
+
+.darkshield-chain {
+  text-align: center !important;
+}
+
+.darkshield-chain-step {
+  padding: 7px 9px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 7px !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.darkshield-chain-arrow {
+  margin: 2px 0 !important;
+  font-size: 12px !important;
+  opacity: 0.45 !important;
+}
+
+.darkshield-warning {
+  margin-top: 16px !important;
+  padding: 11px !important;
+  border-radius: 9px !important;
+  background: rgba(239,68,68,0.08) !important;
+  border: 1px solid rgba(239,68,68,0.16) !important;
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+}
+
+.darkshield-warning strong {
+  display: block !important;
+  margin-bottom: 3px !important;
+}
+
+.darkshield-actions {
+  display: flex !important;
+  gap: 8px !important;
+  margin-top: 16px !important;
+}
+
+.darkshield-button {
+  flex: 1 !important;
+  border-radius: 8px !important;
+  padding: 10px 8px !important;
+  cursor: pointer !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.danger-button {
+  border: none !important;
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+.secondary-button {
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: rgba(255,255,255,0.06) !important;
+  color: white !important;
+}
+
+.darkshield-button:hover {
+  filter: brightness(1.15) !important;
+}
+
+.darkshield-footer {
+  margin-top: 13px !important;
+  text-align: center !important;
+  font-size: 8px !important;
+  opacity: 0.35 !important;
+}
