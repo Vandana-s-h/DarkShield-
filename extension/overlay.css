@@ -1,362 +1,585 @@
+/* =========================================================
+   DARKSHIELD OVERLAY
+   UI ONLY — does not affect backend integration
+   ========================================================= */
+
 #darkshield-overlay {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 340px;
+
+  width: 390px;
+  max-height: calc(100vh - 40px);
+
   z-index: 2147483647;
-  font-family: Arial, sans-serif;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #e8edf5;
+
+  background: #0b1220;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.darkshield-card {
-  background: #0b1020;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+#darkshield-overlay * {
+  box-sizing: border-box;
 }
+
+/* Scrollbar */
+
+#darkshield-overlay::-webkit-scrollbar {
+  width: 6px;
+}
+
+#darkshield-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#darkshield-overlay::-webkit-scrollbar-thumb {
+  background: #33445d;
+  border-radius: 10px;
+}
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.darkshield-card {
+  overflow: hidden;
+
+  border: 1px solid #26364d;
+  border-radius: 18px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 .darkshield-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+
+  gap: 11px;
+
+  padding: 15px 16px;
+
+  background: #0f1827;
+
+  border-bottom: 1px solid #1e2b3e;
 }
 
 .darkshield-logo {
-  font-size: 28px;
-}
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-.darkshield-title {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-}
+  width: 38px;
+  height: 38px;
 
-.darkshield-subtitle {
-  font-size: 11px;
-  opacity: 0.6;
-  margin-top: 3px;
-}
+  flex-shrink: 0;
 
-#darkshield-close {
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  opacity: 0.6;
-}
+  background: #17253a;
 
-.darkshield-status {
-  margin-top: 18px;
-  font-size: 11px;
-  letter-spacing: 1px;
-  opacity: 0.75;
-}
+  border: 1px solid #2a3c57;
+  border-radius: 11px;
 
-.darkshield-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #22c55e;
-  margin-right: 6px;
-}
-
-.darkshield-score {
-  text-align: center;
-  margin: 20px 0;
-}
-
-.darkshield-score-number {
-  font-size: 42px;
-  font-weight: 800;
-}
-
-.darkshield-score-label {
-  font-size: 11px;
-  letter-spacing: 1px;
-  opacity: 0.6;
-}
-
-.darkshield-message {
-  font-size: 13px;
-  line-height: 1.5;
-  opacity: 0.8;
-}
-
-.darkshield-section {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.darkshield-section-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  opacity: 0.55;
-  margin-bottom: 5px;
-}
-
-.darkshield-footer {
-  margin-top: 16px;
-  font-size: 10px;
-  opacity: 0.45;
-  line-height: 1.4;
-}
-
-/* =========================================
-   DARKSHIELD SECURITY OVERLAY
-   ========================================= */
-
-#darkshield-overlay {
-  position: fixed !important;
-  top: 20px !important;
-  right: 20px !important;
-  width: 370px !important;
-  max-height: calc(100vh - 40px) !important;
-  z-index: 2147483647 !important;
-  overflow-y: auto !important;
-  font-family: Arial, Helvetica, sans-serif !important;
-}
-
-.darkshield-card {
-  background: #090d18 !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
-  border-radius: 18px !important;
-  padding: 18px !important;
-  box-shadow: 0 25px 80px rgba(0,0,0,0.55) !important;
-}
-
-.darkshield-card.critical {
-  border-color: rgba(239,68,68,0.6) !important;
-}
-
-.darkshield-card.high {
-  border-color: rgba(249,115,22,0.6) !important;
-}
-
-.darkshield-card.moderate {
-  border-color: rgba(234,179,8,0.6) !important;
-}
-
-.darkshield-card.low {
-  border-color: rgba(34,197,94,0.45) !important;
-}
-
-.darkshield-header {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-}
-
-.darkshield-logo {
-  font-size: 28px !important;
+  font-size: 20px;
 }
 
 .darkshield-brand {
-  flex: 1 !important;
+  flex: 1;
 }
 
 .darkshield-title {
-  font-size: 16px !important;
-  font-weight: 900 !important;
-  letter-spacing: 1.5px !important;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1px;
 }
 
 .darkshield-subtitle {
-  margin-top: 3px !important;
-  font-size: 9px !important;
-  letter-spacing: 1.2px !important;
-  opacity: 0.5 !important;
+  margin-top: 2px;
+
+  color: #71839a;
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
 }
 
 .darkshield-close {
-  border: none !important;
-  background: transparent !important;
-  color: white !important;
-  font-size: 24px !important;
-  cursor: pointer !important;
-  opacity: 0.6 !important;
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #718198;
+
+  font-size: 22px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .darkshield-close:hover {
-  opacity: 1 !important;
+  background: #1b293c;
+  color: #e8edf5;
 }
 
+/* =========================================================
+   STATUS
+   ========================================================= */
+
 .darkshield-status {
-  margin-top: 14px !important;
-  font-size: 9px !important;
-  font-weight: 700 !important;
-  letter-spacing: 1px !important;
-  opacity: 0.65 !important;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 9px 16px;
+
+  background: #0c1523;
+
+  color: #7f91a8;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+
+  text-transform: uppercase;
 }
 
 .darkshield-status-dot {
-  display: inline-block !important;
-  width: 7px !important;
-  height: 7px !important;
-  border-radius: 50% !important;
-  background: #22c55e !important;
-  margin-right: 6px !important;
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #59c98a;
+
+  box-shadow: 0 0 8px rgba(89, 201, 138, 0.45);
 }
 
+/* =========================================================
+   RISK
+   ========================================================= */
+
 .darkshield-risk {
-  text-align: center !important;
-  padding: 18px 0 14px !important;
+  padding: 22px 16px 19px;
+
+  text-align: center;
+
+  background: #0b1220;
 }
 
 .darkshield-risk-icon {
-  font-size: 18px !important;
+  margin-bottom: 5px;
+
+  font-size: 22px;
 }
 
 .darkshield-risk-score {
-  font-size: 48px !important;
-  line-height: 1 !important;
-  font-weight: 900 !important;
-  margin-top: 4px !important;
+  font-size: 43px;
+  line-height: 1;
+
+  font-weight: 900;
+  letter-spacing: -2px;
 }
 
 .darkshield-risk-score span {
-  font-size: 16px !important;
-  opacity: 0.4 !important;
+  color: #687a92;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  letter-spacing: 0;
 }
 
 .darkshield-risk-label {
-  margin-top: 6px !important;
-  font-size: 10px !important;
-  font-weight: 900 !important;
-  letter-spacing: 1.5px !important;
-  opacity: 0.7 !important;
+  display: inline-block;
+
+  margin-top: 10px;
+  padding: 5px 11px;
+
+  border-radius: 999px;
+
+  background: #182436;
+
+  color: #aebed1;
+
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
 }
+
+/* Risk-specific emphasis */
+
+.darkshield-card.low .darkshield-risk-label {
+  background: #12261e;
+  color: #73d5a0;
+}
+
+.darkshield-card.moderate .darkshield-risk-label {
+  background: #282411;
+  color: #e1c16d;
+}
+
+.darkshield-card.high .darkshield-risk-label {
+  background: #2c2112;
+  color: #f0ae58;
+}
+
+.darkshield-card.critical .darkshield-risk-label {
+  background: #32191d;
+  color: #ff7f88;
+}
+
+.darkshield-card.high .darkshield-risk-score,
+.darkshield-card.critical .darkshield-risk-score {
+  color: #f2c06c;
+}
+
+.darkshield-card.critical .darkshield-risk-score {
+  color: #ff858d;
+}
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
 
 .darkshield-divider {
-  height: 1px !important;
-  background: rgba(255,255,255,0.1) !important;
+  height: 1px;
+
+  background: #1e2b3e;
 }
 
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
 .darkshield-section {
-  margin-top: 15px !important;
+  padding: 15px 16px;
+
+  border-bottom: 1px solid #1c293b;
 }
 
 .darkshield-section-title {
-  margin-bottom: 7px !important;
-  font-size: 9px !important;
-  font-weight: 900 !important;
-  letter-spacing: 1.1px !important;
-  opacity: 0.45 !important;
+  margin-bottom: 9px;
+
+  color: #73859c;
+
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+
+  text-transform: uppercase;
 }
+
+/* =========================================================
+   SIGNALS
+   ========================================================= */
 
 .darkshield-signal {
-  display: flex !important;
-  gap: 8px !important;
-  align-items: flex-start !important;
-  margin-top: 5px !important;
-  font-size: 11px !important;
-  line-height: 1.45 !important;
+  display: flex;
+  align-items: flex-start;
+
+  gap: 8px;
+
+  margin-bottom: 6px;
+  padding: 9px 10px;
+
+  border-radius: 9px;
+
+  color: #b9c6d6;
+
+  font-size: 10px;
+  line-height: 1.45;
 }
 
-.darkshield-signal.danger span:first-child,
-.darkshield-signal.warning span:first-child {
-  color: #fb7185 !important;
+.darkshield-signal:last-child {
+  margin-bottom: 0;
 }
 
-.darkshield-signal.safe span:first-child {
-  color: #4ade80 !important;
+.darkshield-signal.danger {
+  background: #21171a;
+  border: 1px solid #3c252b;
 }
+
+.darkshield-signal.warning {
+  background: #211d14;
+  border: 1px solid #3a301e;
+}
+
+.darkshield-signal.safe {
+  background: #12221a;
+  border: 1px solid #233d30;
+
+  color: #86d5a9;
+}
+
+/* =========================================================
+   ATTACK INTENT
+   ========================================================= */
 
 .darkshield-intent {
-  margin-top: 16px !important;
-  padding: 12px !important;
-  border-radius: 10px !important;
-  background: rgba(255,255,255,0.04) !important;
+  margin: 15px 16px;
+
+  padding: 14px;
+
+  background: #111d2d;
+
+  border: 1px solid #29405d;
+  border-radius: 12px;
 }
 
 .darkshield-intent-value {
-  font-size: 13px !important;
-  font-weight: 800 !important;
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  color: #e4edf7;
+
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.4;
 }
 
+/* =========================================================
+   SECONDARY INTENTS
+   ========================================================= */
+
+.darkshield-secondary-intents {
+  padding: 0 16px 15px;
+}
+
+/* =========================================================
+   MANIPULATION MAP
+   ========================================================= */
+
 .darkshield-manipulation {
-  margin-top: 16px !important;
-  padding: 12px !important;
-  border-radius: 10px !important;
-  background: rgba(255,255,255,0.025) !important;
+  padding: 15px 16px;
+
+  border-top: 1px solid #1c293b;
+  border-bottom: 1px solid #1c293b;
 }
 
 .darkshield-chain {
-  text-align: center !important;
+  display: flex;
+  flex-direction: column;
+
+  gap: 0;
 }
 
 .darkshield-chain-step {
-  padding: 7px 9px !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-  border-radius: 7px !important;
-  font-size: 9px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.5px !important;
+  padding: 10px 11px;
+
+  background: #111b2a;
+
+  border: 1px solid #273a53;
+  border-radius: 9px;
+
+  color: #d8e3ef;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .darkshield-chain-arrow {
-  margin: 2px 0 !important;
-  font-size: 12px !important;
-  opacity: 0.45 !important;
+  height: 19px;
+
+  color: #637791;
+
+  font-size: 14px;
+  font-weight: 900;
+
+  text-align: center;
+  line-height: 19px;
 }
 
+/* =========================================================
+   EXPLANATION
+   ========================================================= */
+
+.darkshield-explanation {
+  color: #aab9cb;
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   SCORE BREAKDOWN
+   ========================================================= */
+
+.darkshield-breakdown {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 7px;
+}
+
+.darkshield-breakdown > div {
+  padding: 9px 10px;
+
+  background: #111b2a;
+
+  border: 1px solid #22334a;
+  border-radius: 8px;
+
+  color: #778aa2;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.darkshield-breakdown strong {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #e0e8f2;
+
+  font-size: 15px;
+  font-weight: 900;
+}
+
+/* =========================================================
+   WARNING / RECOMMENDATION
+   ========================================================= */
+
 .darkshield-warning {
-  margin-top: 16px !important;
-  padding: 11px !important;
-  border-radius: 9px !important;
-  background: rgba(239,68,68,0.08) !important;
-  border: 1px solid rgba(239,68,68,0.16) !important;
-  font-size: 10px !important;
-  line-height: 1.5 !important;
+  margin: 15px 16px;
+
+  padding: 13px;
+
+  background: #151e2b;
+
+  border: 1px solid #344258;
+  border-radius: 11px;
+
+  color: #b7c4d4;
+
+  font-size: 10px;
+  line-height: 1.55;
 }
 
 .darkshield-warning strong {
-  display: block !important;
-  margin-bottom: 3px !important;
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #e8eef6;
+
+  font-size: 11px;
 }
 
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
 .darkshield-actions {
-  display: flex !important;
-  gap: 8px !important;
-  margin-top: 16px !important;
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  padding: 0 16px 15px;
 }
 
 .darkshield-button {
-  flex: 1 !important;
-  border-radius: 8px !important;
-  padding: 10px 8px !important;
-  cursor: pointer !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-}
+  width: 100%;
 
-.danger-button {
-  border: none !important;
-  background: #dc2626 !important;
-  color: white !important;
-}
+  padding: 11px 13px;
 
-.secondary-button {
-  border: 1px solid rgba(255,255,255,0.15) !important;
-  background: rgba(255,255,255,0.06) !important;
-  color: white !important;
+  border-radius: 9px;
+
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease,
+    background 0.12s ease;
 }
 
 .darkshield-button:hover {
-  filter: brightness(1.15) !important;
+  transform: translateY(-1px);
+  opacity: 0.92;
 }
 
+.darkshield-button:active {
+  transform: translateY(0);
+}
+
+.danger-button {
+  background: #e7edf4;
+
+  border: 1px solid #e7edf4;
+
+  color: #0b1220;
+}
+
+.secondary-button {
+  background: #172437;
+
+  border: 1px solid #2b3e58;
+
+  color: #aebed2;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
 .darkshield-footer {
-  margin-top: 13px !important;
-  text-align: center !important;
-  font-size: 8px !important;
-  opacity: 0.35 !important;
+  padding: 10px 16px;
+
+  background: #09101b;
+
+  color: #506178;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  #darkshield-overlay {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+
+    width: auto;
+    max-height: calc(100vh - 20px);
+  }
 }
