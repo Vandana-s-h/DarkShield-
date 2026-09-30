@@ -27,6 +27,7 @@ import os
 import re
 import threading
 import urllib.request
+from urllib.error import HTTPError
 from typing import Any, Callable, Dict, List, Optional, Set
 
 logger = logging.getLogger("darkshield.ai")
@@ -124,8 +125,9 @@ def generate_explanation(ctx: Context) -> str:
                 logger.exception("AI provider '%s' failed; using fallback.", name)
     return deterministic_explanation(ctx)
 
+
 # ===========================================================================
-# LLM CONTEXTUAL ANALYSIS
+# LLM CONTEXTUAL ANALYSIS (OpenRouter)
 #
 # The rule engine decides the evidence, the risk score, the severity and the
 # attack intent. This layer only INTERPRETS those results: it explains how the
@@ -133,21 +135,28 @@ def generate_explanation(ctx: Context) -> str:
 # score, a severity or an intent, and the API works identically without it.
 #
 # Configuration (environment variables, never hard-coded):
-#     LLM_API_KEY     required to enable the layer; unset = layer is off
-#     LLM_MODEL       default: claude-haiku-4-5-20251001
-#     LLM_TIMEOUT     seconds, default 5
-#     LLM_API_URL     default: the Anthropic Messages API
-#     DARKSHIELD_LLM  set to "off" to disable even when a key is present
+#     OPENROUTER_API_KEY   required to enable the layer; unset = layer is off
+#     LLM_MODEL            default: openrouter/free
+#                          (for consistent results pin a model that supports
+#                          structured outputs, e.g. openai/gpt-4o-mini)
+#     LLM_TIMEOUT          seconds, default 30 (reasoning models can be slow)
+#     LLM_MAX_TOKENS       default 1500 (reasoning tokens share this budget)
+#     LLM_JSON_SCHEMA      set to "off" to stop sending a JSON schema
+#     OPENROUTER_API_URL   default: https://openrouter.ai/api/v1/chat/completions
+#     DARKSHIELD_LLM       set to "off" to disable even when a key is present
 #
 # PRIVACY: the model only receives the sanitized metadata built by
 # _sanitize_for_provider (signal ids, fixed labels, weights, intent, score).
 # Every string in that payload is a constant from detector.py. The page URL,
 # page text, form contents and matched snippets are never sent, so hostile
 # page text cannot reach the model.
+#
+# The model's reply is untrusted: it is only used after _parse_llm_output
+# validates it against the signals the rule engine actually detected.
 # ===========================================================================
 
 LLM_SEVERITIES = {"MEDIUM", "HIGH", "CRITICAL"}  # benign / low-risk pages never call the LLM
-DEFAULT_LLM_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_LLM_MODEL = "openrouter/free"
 UNAVAILABLE_MESSAGE = "AI analysis unavailable. Showing rule-based analysis."
 
 # Strategy steps the model may use, and the detector signal ids of which at
@@ -166,6 +175,28 @@ _STEP_EVIDENCE: Dict[str, Set[str]] = {
     "COLLECT CREDENTIALS": {"password_field", "email_collection"},
     "REQUEST SENSITIVE DATA": {"sensitive_action"},
     "COLLECT PAYMENT DATA": {"payment_collection", "card_number", "cvv_collection"},
+}
+
+# JSON schema sent to OpenRouter (structured outputs). The enum restricts
+# attack_chain steps to the allowed names. Length limits are intentionally not
+# in the schema (some providers reject them in strict mode); _parse_llm_output
+# enforces them instead.
+_LLM_RESPONSE_SCHEMA: Dict[str, Any] = {
+    "name": "darkshield_analysis",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "tactics": {"type": "array", "items": {"type": "string"}},
+            "attack_chain": {
+                "type": "array",
+                "items": {"type": "string", "enum": list(_STEP_EVIDENCE)},
+            },
+            "explanation": {"type": "string"},
+        },
+        "required": ["tactics", "attack_chain", "explanation"],
+        "additionalProperties": False,
+    },
 }
 
 _SYSTEM_PROMPT = (
@@ -193,7 +224,6 @@ _LLM_CACHE_MAX = 128
 def _llm_enabled() -> bool:
     if os.getenv("DARKSHIELD_LLM", "").strip().lower() == "off":
         return False
-
     return bool(os.getenv("OPENROUTER_API_KEY", "").strip())
 
 
@@ -211,63 +241,6 @@ def _llm_payload(ctx: Context) -> Dict[str, Any]:
     return payload
 
 
-def _call_llm(system: str, user: str) -> str:
-    """One blocking request to OpenRouter. Returns the model's text."""
-
-    url = os.getenv(
-        "OPENROUTER_API_URL",
-        "https://openrouter.ai/api/v1/chat/completions",
-    ).strip()
-    api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-
-    if not api_key:
-        raise ValueError("OPENROUTER_API_KEY is not set")
-
-    body = json.dumps({
-        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
-        "max_tokens": 800,
-        "temperature": 0.2,
-        "messages": [
-            {
-                "role": "system",
-                "content": system
-            },
-            {
-                "role": "user",
-                "content": user
-            }
-        ],
-    }).encode("utf-8")
-
-    request = urllib.request.Request(
-        url,
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://127.0.0.1:8000",
-            "X-Title": "DarkShield",
-        },
-    )
-
-    timeout = float(os.getenv("LLM_TIMEOUT", "10"))
-
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        data = json.loads(response.read(200_000))
-
-    choices = data.get("choices", [])
-
-    if not choices:
-        raise ValueError("OpenRouter returned no choices")
-
-    content = choices[0].get("message", {}).get("content", "")
-
-    if not content:
-        raise ValueError("OpenRouter returned empty content")
-
-    return content
-
 def _clean_text(value: Any, limit: int) -> str:
     if not isinstance(value, str):
         return ""
@@ -275,13 +248,140 @@ def _clean_text(value: Any, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
+def _content_to_text(content: Any) -> str:
+    """message.content may be a plain string or a list of {type, text} parts."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            part["text"] for part in content
+            if isinstance(part, dict) and isinstance(part.get("text"), str)
+        )
+    return ""
+
+
+def _reasoning_to_text(message: Dict[str, Any]) -> str:
+    """Some reasoning models return content=null and write the answer into the
+    `reasoning` / `reasoning_details` fields instead."""
+    parts: List[str] = []
+    reasoning = message.get("reasoning")
+    if isinstance(reasoning, str):
+        parts.append(reasoning)
+    details = message.get("reasoning_details")
+    if isinstance(details, list):
+        for item in details:
+            if isinstance(item, dict):
+                for key in ("text", "summary"):
+                    if isinstance(item.get(key), str):
+                        parts.append(item[key])
+    return "\n".join(parts)
+
+
+def _call_llm(system: str, user: str) -> str:
+    """One blocking request to OpenRouter (no retries). Returns the model's text.
+
+    Raises on any failure; generate_llm_analysis catches everything and falls
+    back to the rule-based analysis. The returned text is untrusted and is only
+    ever passed to _parse_llm_output.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY is not set")
+
+    url = os.getenv("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions").strip()
+    model = os.getenv("LLM_MODEL", "").strip() or DEFAULT_LLM_MODEL
+    # Reasoning tokens share this budget, so it must be far above the ~100
+    # tokens of visible JSON or reasoning models return empty content.
+    max_tokens = int(os.getenv("LLM_MAX_TOKENS", "1500"))
+    timeout = float(os.getenv("LLM_TIMEOUT", "30"))
+
+    payload: Dict[str, Any] = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "temperature": 0.1,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+    }
+    if os.getenv("LLM_JSON_SCHEMA", "on").strip().lower() != "off":
+        payload["response_format"] = {"type": "json_schema", "json_schema": _LLM_RESPONSE_SCHEMA}
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "DarkShield/1.0",
+            "HTTP-Referer": "http://127.0.0.1:8000",
+            "X-Title": "DarkShield",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            data = json.loads(response.read(1_000_000))
+    except HTTPError as exc:  # 400 / 401 / 402 / 429 / 5xx: surface the reason, never the key
+        try:
+            detail = exc.read(500).decode("utf-8", "replace")
+        except Exception:
+            detail = ""
+        raise RuntimeError(f"OpenRouter HTTP {exc.code}: {_clean_text(detail, 300)}") from None
+
+    if not isinstance(data, dict):
+        raise ValueError("OpenRouter returned a non-object response")
+    if data.get("error"):  # OpenRouter can answer HTTP 200 with an error body
+        raise RuntimeError(f"OpenRouter error: {_clean_text(json.dumps(data['error']), 300)}")
+
+    choices = data.get("choices") or []
+    if not choices:
+        raise ValueError("OpenRouter returned no choices")
+
+    choice = choices[0]
+    message = choice.get("message") or {}
+
+    text = _content_to_text(message.get("content")).strip()
+    if text:
+        return text
+
+    fallback = _reasoning_to_text(message).strip()
+    if fallback:
+        logger.info("OpenRouter model %s left content empty; using reasoning channel.", data.get("model"))
+        return fallback
+
+    raise ValueError(
+        f"OpenRouter returned no usable text (model={data.get('model')}, "
+        f"finish_reason={choice.get('finish_reason')}). If finish_reason is 'length', raise LLM_MAX_TOKENS."
+    )
+
+
+def _extract_json_object(raw: str) -> Optional[Dict[str, Any]]:
+    """Find the LAST JSON object in `raw` that has an attack_chain key.
+
+    Tolerates ```json fences, prose before the JSON, and reasoning text that
+    contains stray braces.
+    """
+    decoder = json.JSONDecoder()
+    found: Optional[Dict[str, Any]] = None
+    i = raw.find("{")
+    while i != -1:
+        try:
+            obj, end = decoder.raw_decode(raw, i)
+        except ValueError:
+            i = raw.find("{", i + 1)
+            continue
+        if isinstance(obj, dict) and "attack_chain" in obj:
+            found = obj
+        i = raw.find("{", end)
+    return found
+
+
 def _parse_llm_output(raw: str, present_ids: Set[str]) -> Optional[Dict[str, Any]]:
     """Validate the model's reply. Returns None if it is not usable."""
-    start, end = raw.find("{"), raw.rfind("}")
-    if start == -1 or end <= start:
-        return None
-    data = json.loads(raw[start:end + 1])
-    if not isinstance(data, dict):
+    data = _extract_json_object(raw)
+    if data is None:
         return None
 
     chain: List[str] = []
@@ -326,11 +426,9 @@ def generate_llm_analysis(ctx: Context) -> Optional[Dict[str, Any]]:
     present_ids = {s["id"] for s in payload["signals"]}
     try:
         raw_llm = _call_llm(_SYSTEM_PROMPT, payload_json)
-        
-
         result = _parse_llm_output(raw_llm, present_ids)
-    except Exception as exc:  # network, timeout, HTTP error, bad JSON: never break /analyze
-        logger.warning("LLM analysis failed; using rule-based analysis only.")
+    except Exception as exc:  # never let the LLM layer break the API
+        logger.warning("LLM analysis failed: %s", exc)
         return _unavailable()
 
     if result is None:
