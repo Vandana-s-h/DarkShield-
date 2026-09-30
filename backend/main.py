@@ -8,20 +8,20 @@ Security notes: this service never fetches URLs, never executes page content,
 and never submits credentials or payments. It only analyses the JSON it is given.
 """
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-
-from ai_analysis import generate_explanation
-from detector import (
+from backend.ai_analysis import generate_explanation, generate_llm_analysis
+from backend.detector import (
     detect_behavioral_signals,
     detect_social_signals,
     detect_technical_signals,
 )
-from intent import build_manipulation_map, infer_intent
-from risk_engine import compute_risk
+
+from backend.intent import build_manipulation_map, infer_intent
+from backend.risk_engine import compute_risk
 
 VERSION = "1.0.0"
 
@@ -68,6 +68,15 @@ class ScoreBreakdown(BaseModel):
     categories_present: int
 
 
+class AIAnalysis(BaseModel):
+    """Optional LLM interpretation of the rule-based result. Never affects the score."""
+    available: bool
+    message: str = ""
+    tactics: List[str] = []
+    attack_chain: List[str] = []
+    explanation: str = ""
+
+
 class AnalysisResult(BaseModel):
     risk_score: int = Field(..., ge=0, le=100)
     severity: str
@@ -80,6 +89,7 @@ class AnalysisResult(BaseModel):
     recommendation: str
     explanation: str
     score_breakdown: ScoreBreakdown  # additive field; explains how the score was built
+    ai_analysis: Optional[AIAnalysis] = None  # additive; None for low-risk pages
 
 
 # ------------------------------ Pipeline -----------------------------------
@@ -97,7 +107,7 @@ def run_analysis(page: PageInput) -> AnalysisResult:
         intent["attack_intent"], technical, social, behavioral
     )
 
-    explanation = generate_explanation({
+    context = {
         "risk_score": risk["risk_score"],
         "severity": risk["severity"],
         "attack_intent": intent["attack_intent"],
@@ -105,7 +115,13 @@ def run_analysis(page: PageInput) -> AnalysisResult:
         "technical_signals": technical,
         "social_signals": social,
         "behavioral_signals": behavioral,
-    })
+    }
+    explanation = generate_explanation(context)
+
+    # LLM interpretation runs LAST and is read-only with respect to the results above.
+    ai_analysis = generate_llm_analysis(
+        {**context, "manipulation_map": manipulation_map, "score_breakdown": risk["score_breakdown"]}
+    )
 
     return AnalysisResult(
         risk_score=risk["risk_score"],
@@ -119,6 +135,7 @@ def run_analysis(page: PageInput) -> AnalysisResult:
         recommendation=risk["recommendation"],
         explanation=explanation,
         score_breakdown=risk["score_breakdown"],
+        ai_analysis=ai_analysis,
     )
 
 
