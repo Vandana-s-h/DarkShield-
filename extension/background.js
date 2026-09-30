@@ -281,6 +281,33 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+        // ========================================================
+    // PRE-NAVIGATION CHECK
+    // ========================================================
+
+    if (message?.type === "PRE_NAVIGATION_CHECK") {
+      const url = message.url;
+
+      if (!url || !/^https?:\/\//i.test(url)) {
+        sendResponse({
+          ok: true,
+          risky: false,
+          signals: []
+        });
+
+        return;
+      }
+
+      const signals = inspectNavigationUrl(url);
+
+      sendResponse({
+        ok: true,
+        risky: signals.length > 0,
+        signals
+      });
+
+      return;
+    }
     if (message?.type !== "ANALYZE_PAGE") {
       return;
     }

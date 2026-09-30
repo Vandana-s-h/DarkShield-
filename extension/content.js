@@ -1579,3 +1579,117 @@ const aiAnalysisHTML =
   }
 
 })();
+
+// ============================================================
+// DARKSHIELD PRE-NAVIGATION PROTECTION
+// ============================================================
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const link = event.target.closest("a[href]");
+
+    if (!link) {
+      return;
+    }
+
+    // Ignore DarkShield's own UI.
+    if (link.closest("#darkshield-overlay")) {
+      return;
+    }
+
+    const href = link.href;
+
+    if (!href || !/^https?:\/\//i.test(href)) {
+      return;
+    }
+
+    // Only intercept normal primary clicks.
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.metaKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log(
+      "DarkShield checking destination before navigation:",
+      href
+    );
+
+    chrome.runtime.sendMessage(
+      {
+        type: "PRE_NAVIGATION_CHECK",
+        url: href
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "DarkShield pre-navigation error:",
+            chrome.runtime.lastError.message
+          );
+
+          // Fail open if the extension cannot perform the check.
+          window.location.href = href;
+          return;
+        }
+
+        if (!response?.ok) {
+          window.location.href = href;
+          return;
+        }
+
+        if (!response.risky) {
+          window.location.href = href;
+          return;
+        }
+
+        const signals = Array.isArray(response.signals)
+          ? response.signals
+          : [];
+
+        const signalText = signals
+          .map(
+            (signal) =>
+              `• ${signal.label}${
+                signal.evidence
+                  ? ` — ${signal.evidence}`
+                  : ""
+              }`
+          )
+          .join("\n");
+
+        const proceed = window.confirm(
+          "🚨 DARKSHIELD PRE-NAVIGATION WARNING\n\n" +
+          "This destination contains suspicious URL signals.\n\n" +
+          signalText +
+          "\n\n" +
+          "DarkShield recommends NOT continuing.\n\n" +
+          "Press OK to proceed anyway.\n" +
+          "Press Cancel to stay on this page."
+        );
+
+        if (proceed) {
+          console.log(
+            "DarkShield: user chose to proceed:",
+            href
+          );
+
+          window.location.href = href;
+        } else {
+          console.log(
+            "DarkShield: navigation blocked by user:",
+            href
+          );
+        }
+      }
+    );
+  },
+  true
+);
