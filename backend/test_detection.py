@@ -161,14 +161,27 @@ def _rule_view(result):
     return result.model_dump(exclude={"ai_analysis"})
 
 
-def test_9_llm_unconfigured_still_works():
-    r = _phish()
-    assert r.severity == "CRITICAL" and r.attack_intent == "Credential Theft"
-    assert r.ai_analysis is not None and r.ai_analysis.available is False
-    assert r.ai_analysis.message == "AI analysis unavailable. Showing rule-based analysis."
-    benign = analyze("benign", "https://www.python.org/about/", "About Python", "Python is a language.")
-    assert benign.ai_analysis is None  # low risk: no AI section at all
+def test_9_llm_unconfigured_still_works(monkeypatch):
+    monkeypatch.setenv("DARKSHIELD_LLM", "off")
 
+    r = _phish()
+
+    assert r.severity == "CRITICAL"
+    assert r.attack_intent == "Credential Theft"
+    assert r.ai_analysis is not None
+    assert r.ai_analysis.available is False
+    assert r.ai_analysis.message == (
+        "AI analysis unavailable. Showing rule-based analysis."
+    )
+
+    benign = analyze(
+        "benign",
+        "https://www.python.org/about/",
+        "About Python",
+        "Python is a language.",
+    )
+
+    assert benign.ai_analysis is None
 
 def test_10_llm_never_changes_rule_results():
     baseline = _rule_view(_phish())
