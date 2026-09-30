@@ -136,10 +136,11 @@ def _phish():
 @contextmanager
 def llm_on(fake=None, **env):
     """Enable the LLM layer for one block, then restore everything."""
-    names = {"LLM_API_KEY", "LLM_API_URL", "LLM_TIMEOUT", *env}
+    names = {"OPENROUTER_API_KEY", "OPENROUTER_API_URL", "LLM_TIMEOUT", *env}
     saved_env = {k: os.environ.get(k) for k in names}
     saved_call = ai_analysis._call_llm
-    os.environ["LLM_API_KEY"] = "test-key"
+
+    os.environ["OPENROUTER_API_KEY"] = "test-key"
     os.environ.update(env)
     if fake is not None:
         ai_analysis._call_llm = fake
@@ -237,7 +238,15 @@ class _FakeApi(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["content-length"])))
         type(self).hits.append((dict(self.headers), body))
         time.sleep(type(self).delay)
-        reply = json.dumps({"content": [{"type": "text", "text": json.dumps(GOOD_REPLY)}]}).encode()
+        reply = json.dumps({
+    "choices": [
+        {
+            "message": {
+                "content": json.dumps(GOOD_REPLY)
+            }
+        }
+    ]
+}).encode()
         self.send_response(200)
         self.send_header("content-type", "application/json")
         self.send_header("content-length", str(len(reply)))
@@ -261,18 +270,25 @@ def _fake_api(delay=0.0):
 
 def test_15_real_http_path_headers_cache_and_timeout():
     with _fake_api() as (url, handler):
-        with llm_on(LLM_API_URL=url):
+        with llm_on(OPENROUTER_API_URL=url):
             first, second = _phish(), _phish()
         assert first.ai_analysis.available and second.ai_analysis.available
         assert len(handler.hits) == 1, "second identical analysis should come from the cache"
         headers, body = handler.hits[0]
         headers = {k.lower(): v for k, v in headers.items()}  # urllib capitalizes header names
-        assert headers.get("x-api-key") == "test-key" and "anthropic-version" in headers
-        assert body["model"] == ai_analysis.DEFAULT_LLM_MODEL and body["system"]
+        assert headers.get("authorization") == "Bearer test-key"
+        assert headers.get("content-type") == "application/json"
+        assert headers.get("http-referer") == "http://127.0.0.1:8000"
+        assert headers.get("x-title") == "DarkShield"
+        assert body["model"] == "nvidia/nemotron-3-ultra-550b-a55b:free"
+        assert body["messages"][0]["role"] == "system"
+        assert body["messages"][0]["content"]
+        assert body["messages"][1]["role"] == "user"
+        assert body["messages"][1]["content"]
         assert "accounts-google-verify" not in json.dumps(body)
 
     with _fake_api(delay=1.5) as (url, handler):
-        with llm_on(LLM_API_URL=url, LLM_TIMEOUT="0.3"):
+        with llm_on(OPENROUTER_API_URL=url, LLM_TIMEOUT="0.3"):
             slow = _phish()
         assert slow.ai_analysis.available is False and slow.risk_score == first.risk_score
 
@@ -289,3 +305,37 @@ if __name__ == "__main__":
             print(f"  FAIL  {name}: {exc!r}")
     print(f"\n{len(tests) - failures}/{len(tests)} passed")
     sys.exit(1 if failures else 0)
+
+def test_known_malicious_url():
+    from backend.threat_intel import check_threat_intel
+
+    signals = check_threat_intel(
+        "http://secure-account-verification-login.com/verify"
+    )
+
+    assert any(
+        signal["id"] == "known_malicious_url"
+        for signal in signals
+    )
+
+
+def test_unknown_url_has_no_threat_intel_signal():
+    from backend.threat_intel import check_threat_intel
+
+    signals = check_threat_intel("https://example.com/unknown-page")
+
+    assert not any(
+        signal["id"] == "known_malicious_url"
+        for signal in signals
+    )
+
+
+def test_benign_dataset_url_has_no_threat_signal():
+    from backend.threat_intel import check_threat_intel
+
+    signals = check_threat_intel("https://example.com/")
+
+    assert not any(
+        signal["id"] == "known_malicious_url"
+        for signal in signals
+    )

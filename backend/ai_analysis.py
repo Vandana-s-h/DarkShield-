@@ -214,8 +214,10 @@ def _llm_payload(ctx: Context) -> Dict[str, Any]:
 def _call_llm(system: str, user: str) -> str:
     """One blocking request to OpenRouter. Returns the model's text."""
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
-
+    url = os.getenv(
+        "OPENROUTER_API_URL",
+        "https://openrouter.ai/api/v1/chat/completions",
+    ).strip()
     api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
 
     if not api_key:
@@ -328,8 +330,9 @@ def generate_llm_analysis(ctx: Context) -> Optional[Dict[str, Any]]:
 
         result = _parse_llm_output(raw_llm, present_ids)
     except Exception as exc:  # network, timeout, HTTP error, bad JSON: never break /analyze
-        logger.exception("LLM analysis failed; using rule-based analysis only.")
+        logger.warning("LLM analysis failed; using rule-based analysis only.")
         return _unavailable()
+
     if result is None:
         logger.warning("LLM returned unusable output; using rule-based analysis only.")
         return _unavailable()
