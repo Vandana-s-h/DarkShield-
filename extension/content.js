@@ -3,7 +3,7 @@
 
   // ============================================================
   // DARKSHIELD BROWSER EXTENSION
-  // Automatic webpage analysis
+  // Automatic webpage analysis + backend integration
   // ============================================================
 
   console.log("🛡️ DarkShield activated");
@@ -16,7 +16,6 @@
 
   window.__darkShieldLoaded = true;
 
-
   // ============================================================
   // 1. COLLECT PAGE EVIDENCE
   // ============================================================
@@ -25,30 +24,18 @@
 
   console.log("DarkShield page data:", pageData);
 
-
   // ============================================================
-  // 2. ANALYZE PAGE LOCALLY
-  //    This will later be replaced/augmented by the backend.
-  // ============================================================
-
-  const analysis = analyzePage(pageData);
-
-  console.log("DarkShield analysis:", analysis);
-
-
-  // ============================================================
-  // 3. SHOW SECURITY OVERLAY
+  // 2. ANALYZE WITH BACKEND
+  //    Local analyzer remains as fallback.
   // ============================================================
 
-  showDarkShieldOverlay(pageData, analysis);
-
+  requestBackendAnalysis(pageData);
 
   // ============================================================
   // COLLECT PAGE DATA
   // ============================================================
 
   function collectPageData() {
-
     const bodyText = document.body
       ? document.body.innerText || ""
       : "";
@@ -96,16 +83,77 @@
       .filter(Boolean)
       .slice(0, 100);
 
+    // ----------------------------------------------------------
+    // Convert actual DOM forms into Member 2's API format
+    // ----------------------------------------------------------
+
+    const formData = forms.slice(0, 20).map(form => {
+      const inputs = Array.from(
+        form.querySelectorAll("input, textarea, select")
+      );
+
+      const password = inputs.some(input =>
+        input.type?.toLowerCase() === "password"
+      );
+
+      const email = inputs.some(input =>
+        input.type?.toLowerCase() === "email" ||
+        /email/i.test(
+          `${input.name || ""} ${input.placeholder || ""}`
+        )
+      );
+
+      const card = inputs.some(input =>
+        /card|cardnumber|creditcard/i.test(
+          `${input.name || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`
+        )
+      );
+
+      const cvv = inputs.some(input =>
+        /cvv|cvc|security.?code/i.test(
+          `${input.name || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`
+        )
+      );
+
+      const payment = card || cvv || inputs.some(input =>
+        /payment|billing|upi|account/i.test(
+          `${input.name || ""} ${input.placeholder || ""}`
+        )
+      );
+
+      let type = "unknown";
+
+      if (password || email) {
+        type = "login";
+      } else if (payment || card || cvv) {
+        type = "payment";
+      } else if (inputs.length > 0) {
+        type = "form";
+      }
+
+      return {
+        type,
+        password,
+        email,
+        payment,
+        card,
+        cvv
+      };
+    });
+
     return {
       url: window.location.href,
       hostname: window.location.hostname,
       protocol: window.location.protocol,
       title: document.title || "",
 
-      text: bodyText.slice(0, 50000),
+      text: bodyText.slice(0, 20000),
 
-      forms: forms.length,
+      // Backend expects forms as an array.
+      forms: formData,
 
+      // These remain available to the local fallback analyzer.
+      formCount: forms.length,
       passwordFields,
       emailFields,
       textInputs,
@@ -116,13 +164,199 @@
     };
   }
 
+  // ============================================================
+  // BACKEND REQUEST
+  // ============================================================
+
+  function requestBackendAnalysis(data) {
+    const backendPayload = {
+      url: data.url,
+      title: data.title,
+      text: data.text,
+      forms: data.forms
+    };
+
+    console.log(
+      "DarkShield sending backend payload:",
+      backendPayload
+    );
+
+    chrome.runtime.sendMessage(
+      {
+        type: "ANALYZE_PAGE",
+        payload: backendPayload
+      },
+      response => {
+        // Chrome runtime error
+        if (chrome.runtime.lastError) {
+          console.warn(
+            "DarkShield backend communication failed:",
+            chrome.runtime.lastError.message
+          );
+
+          useLocalFallback(data);
+          return;
+        }
+
+        // Backend unavailable
+        if (!response || !response.ok) {
+          console.warn(
+            "DarkShield backend unavailable:",
+            response?.error || "Unknown backend error"
+          );
+
+          useLocalFallback(data);
+          return;
+        }
+
+        console.log(
+          "DarkShield backend response:",
+          response.data
+        );
+
+        const backendAnalysis =
+          normalizeBackendAnalysis(response.data);
+
+        showDarkShieldOverlay(
+          data,
+          backendAnalysis
+        );
+      }
+    );
+  }
+
+  // ============================================================
+  // NORMALIZE BACKEND RESPONSE
+  // Converts Member 2's structured API response into the
+  // format expected by the existing overlay.
+  // ============================================================
+
+  function normalizeBackendAnalysis(result) {
+    const technicalSignals =
+      normalizeSignals(result.technical_signals);
+
+    const socialSignals =
+      normalizeSignals(result.social_signals);
+
+    const behaviorSignals =
+      normalizeSignals(result.behavioral_signals);
+
+    const manipulationMap =
+      Array.isArray(result.manipulation_map)
+        ? result.manipulation_map
+            .filter(step => step && step.observed)
+            .map(step => {
+              const evidence =
+                Array.isArray(step.evidence)
+                  ? step.evidence
+                  : [];
+
+              if (evidence.length > 0) {
+                return `${step.stage}: ${evidence.join(", ")}`;
+              }
+
+              return step.stage;
+            })
+        : [];
+
+    return {
+      score: Number(result.risk_score ?? 0),
+
+      severity:
+        result.severity ||
+        "LOW",
+
+      technicalSignals,
+
+      socialSignals,
+
+      behaviorSignals,
+
+      attackIntent:
+        result.attack_intent ||
+        "No clear malicious intent",
+
+      secondaryIntents:
+        Array.isArray(result.secondary_intents)
+          ? result.secondary_intents
+          : [],
+
+      manipulationMap:
+        manipulationMap.length > 0
+          ? manipulationMap
+          : ["NO CLEAR MANIPULATION CHAIN"],
+
+      recommendation:
+        result.recommendation ||
+        "Proceed carefully.",
+
+      explanation:
+        result.explanation ||
+        "",
+
+      scoreBreakdown:
+        result.score_breakdown || null,
+
+      source: "BACKEND"
+    };
+  }
+
+  // ============================================================
+  // NORMALIZE SIGNAL OBJECTS
+  // ============================================================
+
+  function normalizeSignals(signals) {
+    if (!Array.isArray(signals)) {
+      return [];
+    }
+
+    return signals.map(signal => {
+      if (typeof signal === "string") {
+        return signal;
+      }
+
+      const label =
+        signal.label ||
+        signal.id ||
+        "Signal detected";
+
+      const evidence =
+        Array.isArray(signal.evidence)
+          ? signal.evidence
+          : [];
+
+      if (evidence.length > 0) {
+        return `${label} — Evidence: ${evidence.join(", ")}`;
+      }
+
+      return label;
+    });
+  }
+
+  // ============================================================
+  // LOCAL FALLBACK
+  // ============================================================
+
+  function useLocalFallback(data) {
+    console.log(
+      "DarkShield using local fallback analyzer."
+    );
+
+    const analysis = analyzePage(data);
+
+    analysis.source = "LOCAL FALLBACK";
+
+    showDarkShieldOverlay(
+      data,
+      analysis
+    );
+  }
 
   // ============================================================
   // LOCAL DARKSHIELD DETECTION ENGINE
   // ============================================================
 
   function analyzePage(data) {
-
     let score = 0;
 
     const technicalSignals = [];
@@ -133,12 +367,10 @@
     const hostname = data.hostname.toLowerCase();
     const text = data.text.toLowerCase();
 
-
     // ==========================================================
     // TECHNICAL URL SIGNALS
     // ==========================================================
 
-    // HTTP instead of HTTPS
     if (
       data.protocol === "http:" &&
       hostname !== "localhost" &&
@@ -151,10 +383,7 @@
       );
     }
 
-
-    // @ symbol in URL
     if (url.includes("@")) {
-
       score += 20;
 
       technicalSignals.push(
@@ -162,13 +391,10 @@
       );
     }
 
-
-    // IP address instead of normal domain
     const ipPattern =
       /^(\d{1,3}\.){3}\d{1,3}$/;
 
     if (ipPattern.test(hostname)) {
-
       score += 20;
 
       technicalSignals.push(
@@ -176,10 +402,7 @@
       );
     }
 
-
-    // Very long hostname
     if (hostname.length > 40) {
-
       score += 8;
 
       technicalSignals.push(
@@ -187,13 +410,10 @@
       );
     }
 
-
-    // Many hyphens
     const hyphenCount =
       (hostname.match(/-/g) || []).length;
 
     if (hyphenCount >= 3) {
-
       score += 8;
 
       technicalSignals.push(
@@ -201,13 +421,10 @@
       );
     }
 
-
-    // Many numbers
     const digitCount =
       (hostname.match(/\d/g) || []).length;
 
     if (digitCount >= 4) {
-
       score += 8;
 
       technicalSignals.push(
@@ -215,8 +432,6 @@
       );
     }
 
-
-    // Suspicious URL keywords
     const sensitiveUrlWords = [
       "login",
       "signin",
@@ -238,14 +453,12 @@
       );
 
     if (matchingSensitiveWord) {
-
       score += 10;
 
       technicalSignals.push(
         "Sensitive account/payment URL"
       );
     }
-
 
     // ==========================================================
     // BRAND IMPERSONATION
@@ -276,14 +489,12 @@
       );
 
     if (mentionedBrand) {
-
       const brandInHostname =
         hostname.includes(
           mentionedBrand.replace(/\s+/g, "")
         );
 
       if (!brandInHostname) {
-
         score += 15;
 
         technicalSignals.push(
@@ -292,13 +503,11 @@
       }
     }
 
-
     // ==========================================================
     // PASSWORD / CREDENTIAL COLLECTION
     // ==========================================================
 
     if (data.passwordFields > 0) {
-
       score += 20;
 
       behaviorSignals.push(
@@ -306,10 +515,7 @@
       );
     }
 
-
-    // Email collection
     if (data.emailFields > 0) {
-
       score += 5;
 
       behaviorSignals.push(
@@ -317,26 +523,19 @@
       );
     }
 
-
-    // Forms
-    if (data.forms > 0) {
-
+    if (data.formCount > 0) {
       behaviorSignals.push(
-        `${data.forms} form detected`
+        `${data.formCount} form detected`
       );
     }
 
-
-    // Payment fields
     if (data.paymentFields > 0) {
-
       score += 20;
 
       behaviorSignals.push(
         "Payment information collection detected"
       );
     }
-
 
     // ==========================================================
     // SOCIAL ENGINEERING — URGENCY
@@ -364,7 +563,6 @@
       );
 
     if (urgencyDetected) {
-
       score += 15;
 
       socialSignals.push(
@@ -372,9 +570,8 @@
       );
     }
 
-
     // ==========================================================
-    // SOCIAL ENGINEERING — SCARCITY
+    // SCARCITY
     // ==========================================================
 
     const scarcityWords = [
@@ -396,7 +593,6 @@
       );
 
     if (scarcityDetected) {
-
       score += 10;
 
       socialSignals.push(
@@ -404,9 +600,8 @@
       );
     }
 
-
     // ==========================================================
-    // SOCIAL ENGINEERING — SOCIAL PROOF
+    // SOCIAL PROOF
     // ==========================================================
 
     const socialProofWords = [
@@ -428,7 +623,6 @@
       );
 
     if (socialProofDetected) {
-
       score += 10;
 
       socialSignals.push(
@@ -436,9 +630,8 @@
       );
     }
 
-
     // ==========================================================
-    // FEAR / THREAT LANGUAGE
+    // FEAR / THREAT
     // ==========================================================
 
     const fearWords = [
@@ -459,14 +652,12 @@
       );
 
     if (fearDetected) {
-
       score += 15;
 
       socialSignals.push(
         "Fear / threat-based pressure"
       );
     }
-
 
     // ==========================================================
     // PAYMENT LANGUAGE
@@ -490,7 +681,6 @@
       );
 
     if (paymentLanguageDetected) {
-
       score += 10;
 
       behaviorSignals.push(
@@ -498,13 +688,7 @@
       );
     }
 
-
-    // ==========================================================
-    // CAP SCORE
-    // ==========================================================
-
     score = Math.min(score, 100);
-
 
     // ==========================================================
     // SEVERITY
@@ -513,25 +697,19 @@
     let severity = "LOW";
 
     if (score >= 76) {
-
       severity = "CRITICAL";
-
     } else if (score >= 51) {
-
       severity = "HIGH";
-
     } else if (score >= 26) {
-
       severity = "MODERATE";
-
     }
-
 
     // ==========================================================
     // ATTACK INTENT
     // ==========================================================
 
-    let attackIntent = "No clear malicious intent";
+    let attackIntent =
+      "No clear malicious intent";
 
     if (
       data.passwordFields > 0 &&
@@ -541,7 +719,6 @@
         data.paymentFields > 0
       )
     ) {
-
       attackIntent =
         "Credential Theft";
 
@@ -549,7 +726,6 @@
       data.paymentFields > 0 ||
       paymentLanguageDetected
     ) {
-
       attackIntent =
         "Financial Information Theft";
 
@@ -560,18 +736,15 @@
         fearDetected
       )
     ) {
-
       attackIntent =
         "Forced User Action";
 
     } else if (
       data.passwordFields > 0
     ) {
-
       attackIntent =
         "Credential Collection";
     }
-
 
     // ==========================================================
     // MANIPULATION MAP
@@ -579,76 +752,61 @@
 
     const manipulationMap = [];
 
-
     if (
       technicalSignals.some(
         signal =>
           signal.toLowerCase().includes("impersonation")
       )
     ) {
-
       manipulationMap.push(
         "IMPERSONATE"
       );
     }
 
-
     if (
       mentionedBrand ||
       socialSignals.length > 0
     ) {
-
       manipulationMap.push(
         "BUILD TRUST"
       );
     }
 
-
     if (urgencyDetected || fearDetected) {
-
       manipulationMap.push(
         "CREATE PRESSURE"
       );
     }
 
-
     if (scarcityDetected) {
-
       manipulationMap.push(
         "CREATE SCARCITY"
       );
     }
 
-
     if (
       data.passwordFields > 0 ||
       data.paymentFields > 0
     ) {
-
       manipulationMap.push(
         "REQUEST SENSITIVE DATA"
       );
     }
 
-
     if (
-      attackIntent !== "No clear malicious intent"
+      attackIntent !==
+      "No clear malicious intent"
     ) {
-
       manipulationMap.push(
         attackIntent.toUpperCase()
       );
     }
 
-
-    // Default map for low-risk pages
     if (manipulationMap.length === 0) {
-
       manipulationMap.push(
         "NO CLEAR MANIPULATION CHAIN"
       );
     }
-
 
     // ==========================================================
     // RECOMMENDATION
@@ -658,56 +816,39 @@
       "Continue browsing normally.";
 
     if (score >= 76) {
-
       recommendation =
         "Do not enter credentials, payment information, or other sensitive data.";
 
     } else if (score >= 51) {
-
       recommendation =
         "Verify the website independently before entering sensitive information.";
 
     } else if (score >= 26) {
-
       recommendation =
         "Proceed carefully and verify important requests.";
-
     }
 
-
-    // ==========================================================
-    // RETURN STRUCTURED RESULT
-    // ==========================================================
-
     return {
-
       score,
-
       severity,
-
       technicalSignals,
-
       socialSignals,
-
       behaviorSignals,
-
       attackIntent,
-
       manipulationMap,
-
-      recommendation
-
+      recommendation,
+      explanation: "",
+      secondaryIntents: [],
+      scoreBreakdown: null,
+      source: "LOCAL FALLBACK"
     };
   }
-
 
   // ============================================================
   // CREATE DARKSHIELD OVERLAY
   // ============================================================
 
   function showDarkShieldOverlay(data, analysis) {
-
-    // Avoid duplicates
     if (
       document.getElementById(
         "darkshield-overlay"
@@ -716,43 +857,33 @@
       return;
     }
 
-
     // ==========================================================
     // RISK CLASS
     // ==========================================================
 
     let riskClass = "low";
-
     let riskIcon = "🟢";
 
     if (analysis.score >= 76) {
-
       riskClass = "critical";
       riskIcon = "🔴";
-
     } else if (analysis.score >= 51) {
-
       riskClass = "high";
       riskIcon = "🟠";
-
     } else if (analysis.score >= 26) {
-
       riskClass = "moderate";
       riskIcon = "🟡";
     }
 
-
     // ==========================================================
-    // SIGNAL HTML HELPERS
+    // SIGNAL HTML
     // ==========================================================
 
     function renderSignals(
       signals,
       type = "warning"
     ) {
-
       if (!signals || signals.length === 0) {
-
         return `
           <div class="darkshield-signal safe">
             <span>✓</span>
@@ -761,35 +892,28 @@
         `;
       }
 
-
       return signals
         .map(signal => {
-
           return `
             <div class="darkshield-signal ${type}">
               <span>⚠</span>
               <span>${escapeHTML(signal)}</span>
             </div>
           `;
-
         })
         .join("");
     }
 
-
     // ==========================================================
-    // MANIPULATION MAP HTML
+    // MANIPULATION MAP
     // ==========================================================
 
     function renderManipulationMap() {
-
       const steps =
         analysis.manipulationMap || [];
 
-
       return steps
         .map((step, index) => {
-
           const arrow =
             index < steps.length - 1
               ? `
@@ -799,7 +923,6 @@
               `
               : "";
 
-
           return `
             <div class="darkshield-chain-step">
               ${escapeHTML(step)}
@@ -807,11 +930,90 @@
 
             ${arrow}
           `;
-
         })
         .join("");
     }
 
+    // ==========================================================
+    // EXTRA BACKEND DETAILS
+    // ==========================================================
+
+    const sourceLabel =
+      analysis.source === "BACKEND"
+        ? "BACKEND ANALYSIS"
+        : "LOCAL FALLBACK ANALYSIS";
+
+    const secondaryIntentHTML =
+      analysis.secondaryIntents &&
+      analysis.secondaryIntents.length > 0
+        ? `
+          <div class="darkshield-secondary-intents">
+            <div class="darkshield-section-title">
+              SECONDARY INTENTS
+            </div>
+
+            ${analysis.secondaryIntents
+              .map(intent => `
+                <div class="darkshield-signal warning">
+                  <span>•</span>
+                  <span>${escapeHTML(intent)}</span>
+                </div>
+              `)
+              .join("")}
+          </div>
+        `
+        : "";
+
+    const explanationHTML =
+      analysis.explanation
+        ? `
+          <div class="darkshield-section">
+            <div class="darkshield-section-title">
+              DARKSHIELD EXPLANATION
+            </div>
+
+            <div class="darkshield-explanation">
+              ${escapeHTML(analysis.explanation)}
+            </div>
+          </div>
+        `
+        : "";
+
+    const breakdown =
+      analysis.scoreBreakdown;
+
+    const breakdownHTML =
+      breakdown
+        ? `
+          <div class="darkshield-section">
+            <div class="darkshield-section-title">
+              SCORE BREAKDOWN
+            </div>
+
+            <div class="darkshield-breakdown">
+              <div>
+                Technical:
+                <strong>${escapeHTML(breakdown.technical)}</strong>
+              </div>
+
+              <div>
+                Social:
+                <strong>${escapeHTML(breakdown.social)}</strong>
+              </div>
+
+              <div>
+                Behavioral:
+                <strong>${escapeHTML(breakdown.behavioral)}</strong>
+              </div>
+
+              <div>
+                Combination:
+                <strong>${escapeHTML(breakdown.combination_bonus)}</strong>
+              </div>
+            </div>
+          </div>
+        `
+        : "";
 
     // ==========================================================
     // CREATE OVERLAY
@@ -823,12 +1025,9 @@
     overlay.id =
       "darkshield-overlay";
 
-
     overlay.innerHTML = `
 
       <div class="darkshield-card ${riskClass}">
-
-        <!-- HEADER -->
 
         <div class="darkshield-header">
 
@@ -858,19 +1057,13 @@
 
         </div>
 
-
-        <!-- STATUS -->
-
         <div class="darkshield-status">
 
           <span class="darkshield-status-dot"></span>
 
-          AUTOMATIC PAGE ANALYSIS
+          ${sourceLabel}
 
         </div>
-
-
-        <!-- RISK -->
 
         <div class="darkshield-risk">
 
@@ -880,7 +1073,7 @@
 
           <div class="darkshield-risk-score">
 
-            ${analysis.score}
+            ${escapeHTML(analysis.score)}
 
             <span>/100</span>
 
@@ -888,24 +1081,18 @@
 
           <div class="darkshield-risk-label">
 
-            ${analysis.severity} RISK
+            ${escapeHTML(analysis.severity)} RISK
 
           </div>
 
         </div>
 
-
         <div class="darkshield-divider"></div>
-
-
-        <!-- TECHNICAL SIGNALS -->
 
         <div class="darkshield-section">
 
           <div class="darkshield-section-title">
-
             TECHNICAL SIGNALS
-
           </div>
 
           ${renderSignals(
@@ -915,15 +1102,10 @@
 
         </div>
 
-
-        <!-- SOCIAL ENGINEERING -->
-
         <div class="darkshield-section">
 
           <div class="darkshield-section-title">
-
             SOCIAL ENGINEERING
-
           </div>
 
           ${renderSignals(
@@ -933,15 +1115,10 @@
 
         </div>
 
-
-        <!-- SUSPICIOUS BEHAVIOR -->
-
         <div class="darkshield-section">
 
           <div class="darkshield-section-title">
-
             SUSPICIOUS BEHAVIOR
-
           </div>
 
           ${renderSignals(
@@ -951,15 +1128,10 @@
 
         </div>
 
-
-        <!-- ATTACK INTENT -->
-
         <div class="darkshield-intent">
 
           <div class="darkshield-section-title">
-
             ATTACK INTENT
-
           </div>
 
           <div class="darkshield-intent-value">
@@ -973,15 +1145,12 @@
 
         </div>
 
-
-        <!-- MANIPULATION MAP -->
+        ${secondaryIntentHTML}
 
         <div class="darkshield-manipulation">
 
           <div class="darkshield-section-title">
-
             MANIPULATION MAP
-
           </div>
 
           <div class="darkshield-chain">
@@ -992,8 +1161,9 @@
 
         </div>
 
+        ${explanationHTML}
 
-        <!-- WARNING -->
+        ${breakdownHTML}
 
         <div class="darkshield-warning">
 
@@ -1016,9 +1186,6 @@
           </div>
 
         </div>
-
-
-        <!-- ACTIONS -->
 
         <div class="darkshield-actions">
 
@@ -1046,9 +1213,6 @@
 
         </div>
 
-
-        <!-- FOOTER -->
-
         <div class="darkshield-footer">
 
           DarkShield • Automatic Protection
@@ -1059,36 +1223,28 @@
 
     `;
 
-
     // ==========================================================
     // ADD TO PAGE
     // ==========================================================
 
     if (document.body) {
-
       document.body.appendChild(
         overlay
       );
-
     } else {
-
       document.addEventListener(
         "DOMContentLoaded",
         () => {
-
           document.body.appendChild(
             overlay
           );
-
         },
         { once: true }
       );
-
     }
 
-
     // ==========================================================
-    // CLOSE BUTTON
+    // CLOSE
     // ==========================================================
 
     const closeButton =
@@ -1096,20 +1252,14 @@
         "darkshield-close"
       );
 
-
     if (closeButton) {
-
       closeButton.addEventListener(
         "click",
         () => {
-
           overlay.remove();
-
         }
       );
-
     }
-
 
     // ==========================================================
     // LEAVE SITE
@@ -1120,38 +1270,24 @@
         "darkshield-leave"
       );
 
-
     if (leaveButton) {
-
       leaveButton.addEventListener(
         "click",
         () => {
-
-          // Go back when possible.
-          // If there is no previous page, navigate to a
-          // harmless blank page.
-
           if (
             window.history.length > 1
           ) {
-
             window.history.back();
-
           } else {
-
             window.location.href =
               "about:blank";
-
           }
-
         }
       );
-
     }
 
-
     // ==========================================================
-    // FULL ANALYSIS BUTTON
+    // FULL ANALYSIS
     // ==========================================================
 
     const detailsButton =
@@ -1159,27 +1295,14 @@
         "darkshield-details"
       );
 
-
     if (detailsButton) {
-
       detailsButton.addEventListener(
         "click",
         () => {
-
           console.log(
             "DarkShield full analysis:",
             analysis
           );
-
-
-          // TEMPORARY
-          //
-          // Later this will open your main
-          // DarkShield dashboard.
-          //
-          // We deliberately keep this simple
-          // until the backend + dashboard URL
-          // are connected.
 
           alert(
             "DarkShield Full Analysis\n\n" +
@@ -1190,24 +1313,21 @@
             analysis.severity +
             "\n\n" +
             "Attack Intent: " +
-            analysis.attackIntent
+            analysis.attackIntent +
+            "\n\n" +
+            "Analysis Source: " +
+            analysis.source
           );
-
         }
       );
-
     }
-
   }
-
 
   // ============================================================
   // HTML ESCAPE
-  // Prevent page content from injecting HTML into the overlay.
   // ============================================================
 
   function escapeHTML(value) {
-
     const stringValue =
       String(value ?? "");
 
@@ -1218,6 +1338,5 @@
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
-
 
 })();
