@@ -342,45 +342,74 @@ showDarkShieldOverlay(
         : [];
 
     return {
-      score: Number(result.risk_score ?? 0),
+  score: Number(result.risk_score ?? 0),
 
-      severity:
-        result.severity ||
-        "LOW",
+  severity:
+    result.severity ||
+    "LOW",
 
-      technicalSignals,
+  technicalSignals,
 
-      socialSignals,
+  socialSignals,
 
-      behaviorSignals,
+  behaviorSignals,
 
-      attackIntent:
-        result.attack_intent ||
-        "No clear malicious intent",
+  attackIntent:
+    result.attack_intent ||
+    "No clear malicious intent",
 
-      secondaryIntents:
-        Array.isArray(result.secondary_intents)
-          ? result.secondary_intents
-          : [],
+  secondaryIntents:
+    Array.isArray(result.secondary_intents)
+      ? result.secondary_intents
+      : [],
 
-      manipulationMap:
-        manipulationMap.length > 0
-          ? manipulationMap
-          : ["NO CLEAR MANIPULATION CHAIN"],
+  manipulationMap:
+    manipulationMap.length > 0
+      ? manipulationMap
+      : ["NO CLEAR MANIPULATION CHAIN"],
 
-      recommendation:
-        result.recommendation ||
-        "Proceed carefully.",
+  recommendation:
+    result.recommendation ||
+    "Proceed carefully.",
 
-      explanation:
-        result.explanation ||
-        "",
+  explanation:
+    result.explanation ||
+    "",
 
-      scoreBreakdown:
-        result.score_breakdown || null,
+  scoreBreakdown:
+    result.score_breakdown || null,
 
-      source: "BACKEND"
-    };
+  // ==========================================================
+  // AI CONTEXTUAL ANALYSIS
+  // ==========================================================
+
+  aiAnalysis:
+    result.ai_analysis &&
+    typeof result.ai_analysis === "object"
+      ? {
+          available:
+            result.ai_analysis.available === true,
+
+          message:
+            result.ai_analysis.message || "",
+
+          tactics:
+            Array.isArray(result.ai_analysis.tactics)
+              ? result.ai_analysis.tactics
+              : [],
+
+          attackChain:
+            Array.isArray(result.ai_analysis.attack_chain)
+              ? result.ai_analysis.attack_chain
+              : [],
+
+          explanation:
+            result.ai_analysis.explanation || ""
+        }
+      : null,
+
+  source: "BACKEND"
+};
   }
 
   // ============================================================
@@ -1097,6 +1126,106 @@ showDarkShieldOverlay(
         `
         : "";
 
+
+    // ==========================================================
+// AI CONTEXTUAL ANALYSIS
+// ==========================================================
+
+const ai = analysis.aiAnalysis;
+
+const aiAnalysisHTML =
+  ai &&
+  ai.available === true
+    ? `
+      <div class="darkshield-section">
+
+        <div class="darkshield-section-title">
+          AI CONTEXTUAL ANALYSIS
+        </div>
+
+        ${
+          ai.tactics.length > 0
+            ? `
+              <div class="darkshield-ai-subsection">
+
+                <div class="darkshield-ai-label">
+                  TACTICS
+                </div>
+
+                ${ai.tactics
+                  .map(tactic => `
+                    <div class="darkshield-signal warning">
+                      <span>•</span>
+                      <span>${escapeHTML(tactic)}</span>
+                    </div>
+                  `)
+                  .join("")}
+
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          ai.attackChain.length > 0
+            ? `
+              <div class="darkshield-ai-subsection">
+
+                <div class="darkshield-ai-label">
+                  ATTACK CHAIN
+                </div>
+
+                <div class="darkshield-chain">
+
+                  ${ai.attackChain
+                    .map((step, index) => {
+                      const arrow =
+                        index < ai.attackChain.length - 1
+                          ? `
+                            <div class="darkshield-chain-arrow">
+                              ↓
+                            </div>
+                          `
+                          : "";
+
+                      return `
+                        <div class="darkshield-chain-step">
+                          ${escapeHTML(step)}
+                        </div>
+
+                        ${arrow}
+                      `;
+                    })
+                    .join("")}
+
+                </div>
+
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          ai.explanation
+            ? `
+              <div class="darkshield-ai-subsection">
+
+                <div class="darkshield-ai-label">
+                  AI EXPLANATION
+                </div>
+
+                <div class="darkshield-explanation">
+                  ${escapeHTML(ai.explanation)}
+                </div>
+
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+    `
+    : "";
     // ==========================================================
     // CREATE OVERLAY
     // ==========================================================
@@ -1245,6 +1374,8 @@ showDarkShieldOverlay(
 
         ${explanationHTML}
 
+        ${aiAnalysisHTML}
+
         ${breakdownHTML}
 
         <div class="darkshield-warning">
@@ -1388,6 +1519,7 @@ showDarkShieldOverlay(
             pageTitle: data.title,
             analysis: analysis
           };
+
 
           const encoded = encodeReportForUrl(report);
 

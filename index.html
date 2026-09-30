@@ -302,6 +302,24 @@ footer b{color:var(--text)}
 <div class="sectitle">Suspicious Behavior</div><div class="siggrid" id="sigBehavior"></div>
 <div class="explain">
 <h3>Threat Explanation</h3><p id="aiExplain"></p>
+<div id="aiContextualAnalysis" style="margin-top:18px;display:none;">
+  <h3>AI Contextual Analysis</h3>
+
+  <div id="aiTacticsSection" style="margin-bottom:12px;">
+    <div class="sectitle">Psychological Tactics</div>
+    <div id="aiTactics"></div>
+  </div>
+
+  <div id="aiChainSection" style="margin-bottom:12px;">
+    <div class="sectitle">Attack Chain</div>
+    <div id="aiAttackChain" class="story"></div>
+  </div>
+
+  <div id="aiExplanationSection">
+    <div class="sectitle">AI Explanation</div>
+    <p id="aiContextExplanation"></p>
+  </div>
+</div>
 <h3>Why this matters</h3><p id="whyMatters"></p>
 <h3>What the attacker is trying to do</h3><p id="attackerGoal"></p>
 <h3>What you should do</h3><ul id="whatToDo"></ul>
@@ -902,6 +920,47 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
     const social = asArray(a.socialSignals || a.social_signals);
     const behavioral = asArray(a.behaviorSignals || a.behavioralSignals || a.behavioral_signals);
     const manipulation = asArray(a.manipulationMap || a.manipulation_map).map(parseStep);
+
+    // AI contextual analysis from extension/backend
+const ai = a.aiAnalysis || a.ai_analysis || null;
+
+const aiContextualAnalysis = document.getElementById("aiContextualAnalysis");
+const aiTactics = document.getElementById("aiTactics");
+const aiAttackChain = document.getElementById("aiAttackChain");
+const aiContextExplanation = document.getElementById("aiContextExplanation");
+
+if (ai && ai.available === true) {
+  const tactics = Array.isArray(ai.tactics) ? ai.tactics : [];
+  const attackChain = Array.isArray(ai.attackChain)
+    ? ai.attackChain
+    : (Array.isArray(ai.attack_chain) ? ai.attack_chain : []);
+  const explanation = String(ai.explanation || ai.message || "");
+
+  aiContextualAnalysis.style.display = "block";
+
+  aiTactics.innerHTML = tactics.length
+    ? tactics.map(t =>
+        '<span class="lvltag HIGH" style="display:inline-block;margin:3px 5px 3px 0;">' +
+        esc(t) +
+        '</span>'
+      ).join("")
+    : '<div style="color:var(--muted);font-size:13px;">No psychological tactics detected.</div>';
+
+  aiAttackChain.innerHTML = attackChain.length
+    ? attackChain.map((step, i) =>
+        '<div class="storystep"><b>' +
+        String(i + 1).padStart(2, "0") +
+        "</b>" +
+        esc(step) +
+        "</div>"
+      ).join("")
+    : '<div style="color:var(--muted);font-size:13px;">No attack chain generated.</div>';
+
+  aiContextExplanation.textContent =
+    explanation || "No AI explanation was supplied.";
+} else {
+  aiContextualAnalysis.style.display = "none";
+}
     const breakdownData = a.scoreBreakdown || a.score_breakdown || null;
     const recommendation = a.recommendation || "Verify the website independently before entering sensitive information.";
     const rawSource = String(a.source || "").toUpperCase();
