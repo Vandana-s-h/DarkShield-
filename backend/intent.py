@@ -10,8 +10,7 @@ Primary-intent rule (avoids "everything with a login is Credential Theft"):
 
 from typing import Any, Dict, List, Set
 
-from risk_engine import MEDIUM_MIN_SCORE
-
+from backend.risk_engine import MEDIUM_MIN_SCORE
 Signal = Dict[str, Any]
 
 CREDENTIAL_IDS: Set[str] = {

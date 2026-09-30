@@ -1,0 +1,240 @@
+ source /Users/prarthanahs/Desktop/DarkShield-/.venv/bin/activate
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Official NovaTech Store - Flash Sale</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 20px 40px;
+    }
+
+    .brand {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .trust {
+      font-size: 14px;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    .banner {
+      background: #b91c1c;
+      color: white;
+      text-align: center;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+    }
+
+    .product {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
+    .product-image {
+      width: 280px;
+      height: 220px;
+      background: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      border-radius: 8px;
+    }
+
+    .price {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .old-price {
+      text-decoration: line-through;
+      color: #777;
+      margin-left: 10px;
+    }
+
+    .urgency {
+      color: #b91c1c;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .social-proof {
+      background: #fff7ed;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    form {
+      margin-top: 30px;
+      border-top: 1px solid #ddd;
+      padding-top: 25px;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 6px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 15px;
+      background: #111827;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .warning {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="brand">NovaTech Store</div>
+    <div class="trust">
+      Official Store • Secure Checkout • Trusted by thousands of customers
+    </div>
+  </header>
+
+  <div class="banner">
+    🔥 FLASH SALE — OFFER EXPIRES IN 10 MINUTES 🔥
+  </div>
+
+  <div class="container">
+
+    <div class="product">
+
+      <div class="product-image">
+        🎧
+      </div>
+
+      <div>
+        <h1>NovaTech Pro Wireless Headphones</h1>
+
+        <div class="price">
+          $39.99
+          <span class="old-price">$129.99</span>
+        </div>
+
+        <p class="urgency">
+          ⚠️ Limited time! Only 2 items left at this price.
+        </p>
+
+        <div class="social-proof">
+          👥 93 people are viewing this product right now.
+          <br>
+          ⭐ 4.9/5 rating from 2,847 customers.
+          <br>
+          🛒 17 people purchased this item in the last 10 minutes.
+        </div>
+
+        <p>
+          Don't miss this exclusive offer. Complete your purchase now
+          before the promotion ends.
+        </p>
+      </div>
+
+    </div>
+
+    <form>
+
+      <h2>Complete Your Purchase</h2>
+
+      <p>
+        Verify your account information to continue with secure checkout.
+      </p>
+
+      <label for="email">Email Address</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        placeholder="Enter your email"
+      >
+
+      <label for="password">Account Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        placeholder="Enter your password"
+      >
+
+      <label for="card">Card Number</label>
+      <input
+        id="card"
+        name="card"
+        type="text"
+        autocomplete="cc-number"
+        placeholder="1234 5678 9012 3456"
+      >
+
+      <label for="cvv">CVV</label>
+      <input
+        id="cvv"
+        name="cvv"
+        type="text"
+        autocomplete="cc-csc"
+        placeholder="123"
+      >
+
+      <button type="submit">
+        🔒 VERIFY & COMPLETE PURCHASE
+      </button>
+
+      <div class="warning">
+        Your order may be cancelled if verification is not completed
+        before the promotional timer expires.
+      </div>
+
+    </form>
+
+  </div>
+
+</body>
+</html>
