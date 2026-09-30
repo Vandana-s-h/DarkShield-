@@ -193,7 +193,8 @@ _LLM_CACHE_MAX = 128
 def _llm_enabled() -> bool:
     if os.getenv("DARKSHIELD_LLM", "").strip().lower() == "off":
         return False
-    return bool(os.getenv("LLM_API_KEY", "").strip())
+
+    return bool(os.getenv("OPENROUTER_API_KEY", "").strip())
 
 
 def _unavailable() -> Dict[str, Any]:
@@ -211,34 +212,59 @@ def _llm_payload(ctx: Context) -> Dict[str, Any]:
 
 
 def _call_llm(system: str, user: str) -> str:
-    """One blocking request to the LLM API. Returns the model's text.
+    """One blocking request to OpenRouter. Returns the model's text."""
 
-    To use a different provider, replace only this function.
-    """
-    url = os.getenv("LLM_API_URL", "https://api.anthropic.com/v1/messages")
-    if not url.lower().startswith(("http://", "https://")):
-        raise ValueError("LLM_API_URL must be http(s)")
+    url = "https://openrouter.ai/api/v1/chat/completions"
+
+    api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY is not set")
+
     body = json.dumps({
-        "model": os.getenv("LLM_MODEL", DEFAULT_LLM_MODEL),
-        "max_tokens": 400,
-        "system": system,
-        "messages": [{"role": "user", "content": user}],
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "max_tokens": 800,
+        "temperature": 0.2,
+        "messages": [
+            {
+                "role": "system",
+                "content": system
+            },
+            {
+                "role": "user",
+                "content": user
+            }
+        ],
     }).encode("utf-8")
+
     request = urllib.request.Request(
-        url, data=body, method="POST",
+        url,
+        data=body,
+        method="POST",
         headers={
-            "x-api-key": os.getenv("LLM_API_KEY", "").strip(),
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://127.0.0.1:8000",
+            "X-Title": "DarkShield",
         },
     )
-    timeout = float(os.getenv("LLM_TIMEOUT", "5"))
-    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (scheme checked above)
-        data = json.loads(response.read(200_000))
-    return "".join(
-        block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"
-    )
 
+    timeout = float(os.getenv("LLM_TIMEOUT", "10"))
+
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        data = json.loads(response.read(200_000))
+
+    choices = data.get("choices", [])
+
+    if not choices:
+        raise ValueError("OpenRouter returned no choices")
+
+    content = choices[0].get("message", {}).get("content", "")
+
+    if not content:
+        raise ValueError("OpenRouter returned empty content")
+
+    return content
 
 def _clean_text(value: Any, limit: int) -> str:
     if not isinstance(value, str):
@@ -297,9 +323,12 @@ def generate_llm_analysis(ctx: Context) -> Optional[Dict[str, Any]]:
 
     present_ids = {s["id"] for s in payload["signals"]}
     try:
-        result = _parse_llm_output(_call_llm(_SYSTEM_PROMPT, payload_json), present_ids)
+        raw_llm = _call_llm(_SYSTEM_PROMPT, payload_json)
+        
+
+        result = _parse_llm_output(raw_llm, present_ids)
     except Exception as exc:  # network, timeout, HTTP error, bad JSON: never break /analyze
-        logger.warning("LLM analysis failed (%s); using rule-based analysis only.", type(exc).__name__)
+        logger.exception("LLM analysis failed; using rule-based analysis only.")
         return _unavailable()
     if result is None:
         logger.warning("LLM returned unusable output; using rule-based analysis only.")
