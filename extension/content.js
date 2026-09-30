@@ -36,7 +36,57 @@
 
   const pageData = collectPageData();
 
-  console.log("DarkShield page data:", pageData);
+chrome.runtime.sendMessage(
+  {
+    type: "GET_NAVIGATION_EVIDENCE"
+  },
+  (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn(
+        "DarkShield navigation evidence unavailable:",
+        chrome.runtime.lastError.message
+      );
+
+      pageData.navigationEvidence = [];
+      requestBackendAnalysis(pageData);
+      return;
+    }
+
+    const navigationEvidence =
+      response?.ok && response.data
+        ? response.data
+        : null;
+
+    if (
+      navigationEvidence &&
+      navigationEvidence.url === pageData.url
+    ) {
+      pageData.navigationEvidence =
+        Array.isArray(navigationEvidence.signals)
+          ? navigationEvidence.signals
+          : [];
+
+      console.log(
+        "DarkShield navigation evidence:",
+        pageData.navigationEvidence
+      );
+    } else {
+      pageData.navigationEvidence = [];
+
+      console.log(
+        "DarkShield navigation evidence: none"
+      );
+    }
+
+    console.log(
+      "DarkShield page data:",
+      pageData
+    );
+
+    requestBackendAnalysis(pageData);
+  }
+);
+
 
   // ============================================================
   // 2. ANALYZE WITH BACKEND
@@ -228,13 +278,31 @@
           response.data
         );
 
-        const backendAnalysis =
-          normalizeBackendAnalysis(response.data);
+        const backendAnalysis = normalizeBackendAnalysis(response.data);
 
-        showDarkShieldOverlay(
-          data,
-          backendAnalysis
-        );
+if (
+  Array.isArray(data.navigationEvidence) &&
+  data.navigationEvidence.length > 0
+) {
+  const navigationSignals = data.navigationEvidence.map(signal => {
+    const label = signal.label || signal.id || "Navigation signal";
+    const evidence = signal.evidence
+      ? ` — Evidence: ${signal.evidence}`
+      : "";
+
+    return `${label}${evidence}`;
+  });
+
+  backendAnalysis.technicalSignals = [
+    ...navigationSignals,
+    ...backendAnalysis.technicalSignals
+  ];
+}
+
+showDarkShieldOverlay(
+  data,
+  backendAnalysis
+);
       }
     );
   }

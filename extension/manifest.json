@@ -5,9 +5,10 @@
   "description": "AI-assisted protection against phishing, scams, and social engineering.",
 
   "permissions": [
-    "activeTab",
-    "storage"
-  ],
+  "activeTab",
+  "storage",
+  "webNavigation"
+],
 
   "host_permissions": [
     "<all_urls>",
@@ -25,7 +26,9 @@
       "js": ["content.js"],
       "css": ["overlay.css"],
       "run_at": "document_idle",
-      "exclude_matches": ["https://cheerful-cannoli-d30797.netlify.app/"]
+      "exclude_matches": [
+  "https://cheerful-cannoli-d30797.netlify.app/*"
+]
     }
   ],
 
