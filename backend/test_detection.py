@@ -280,7 +280,7 @@ def test_15_real_http_path_headers_cache_and_timeout():
         assert headers.get("content-type") == "application/json"
         assert headers.get("http-referer") == "http://127.0.0.1:8000"
         assert headers.get("x-title") == "DarkShield"
-        assert body["model"] == "nvidia/nemotron-3-ultra-550b-a55b:free"
+        assert body["model"] == "openrouter/free"
         assert body["messages"][0]["role"] == "system"
         assert body["messages"][0]["content"]
         assert body["messages"][1]["role"] == "user"
@@ -310,7 +310,7 @@ def test_known_malicious_url():
     from backend.threat_intel import check_threat_intel
 
     signals = check_threat_intel(
-        "http://secure-account-verification-login.com/verify"
+        "http://kranskotaren.se/wordpress/wp-content/file/host/host"
     )
 
     assert any(
