@@ -1,0 +1,8 @@
+url,label,source
+http://secure-account-verification-login.com/verify,malicious,demo
+http://paypal-login-security-check.com/login,malicious,demo
+http://amazon-account-confirmation.xyz/verify,malicious,demo
+http://microsoft-security-alert.top/login,malicious,demo
+http://apple-id-verification.click/account,malicious,demo
+https://example.com/,benign,demo
+https://www.google.com/,benign,demo

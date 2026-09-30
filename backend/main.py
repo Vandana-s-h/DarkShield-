@@ -9,7 +9,7 @@ and never submits credentials or payments. It only analyses the JSON it is given
 """
 
 from typing import List, Optional
-
+from backend.threat_intel import check_threat_intel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -98,6 +98,8 @@ def run_analysis(page: PageInput) -> AnalysisResult:
     forms = [f.model_dump() for f in page.forms]
 
     technical = detect_technical_signals(page.url, forms)
+    threat_intel = check_threat_intel(page.url)
+    technical.extend(threat_intel)
     social = detect_social_signals(page.title, page.text)
     behavioral = detect_behavioral_signals(forms, page.title, page.text)
 
