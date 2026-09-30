@@ -2,6 +2,20 @@
   "use strict";
 
   // ============================================================
+  // CONSTANTS + SELF-GUARD
+  // ============================================================
+
+  const DARKSHIELD_SITE_HOSTNAME = "eloquent-gumption-407aad.netlify.app";
+  const DARKSHIELD_REPORT_URL = "https://" + DARKSHIELD_SITE_HOSTNAME + "/";
+
+  // The DarkShield website is the REPORT VIEWER. Never analyze it and
+  // never show the overlay there. (A `return` is valid here because
+  // this code is inside the IIFE function body.)
+  if (window.location.hostname === DARKSHIELD_SITE_HOSTNAME) {
+    return;
+  }
+
+  // ============================================================
   // DARKSHIELD BROWSER EXTENSION
   // Automatic webpage analysis + backend integration
   // ============================================================
@@ -1286,41 +1300,66 @@
       );
     }
 
-    // ==========================================================
+        // ==========================================================
     // FULL ANALYSIS
+    // Transfers the SAME `analysis` object shown in this overlay.
+    // No backend call, no local detector, no re-analysis.
     // ==========================================================
 
     const detailsButton =
-      document.getElementById(
-        "darkshield-details"
-      );
+      document.getElementById("darkshield-details");
 
     if (detailsButton) {
-      detailsButton.addEventListener(
-        "click",
-        () => {
-          console.log(
-            "DarkShield full analysis:",
-            analysis
-          );
+      detailsButton.addEventListener("click", () => {
+        try {
+          const report = {
+            schema: "darkshield-extension-report",
+            version: 1,
+            createdAt: new Date().toISOString(),
+            pageUrl: data.url,
+            pageTitle: data.title,
+            analysis: analysis
+          };
 
-          alert(
-            "DarkShield Full Analysis\n\n" +
-            "Risk Score: " +
-            analysis.score +
-            "/100\n\n" +
-            "Severity: " +
-            analysis.severity +
-            "\n\n" +
-            "Attack Intent: " +
-            analysis.attackIntent +
-            "\n\n" +
-            "Analysis Source: " +
-            analysis.source
+          const encoded = encodeReportForUrl(report);
+
+          window.open(
+            DARKSHIELD_REPORT_URL + "#extension-report=" + encoded,
+            "_blank"
+          );
+        } catch (error) {
+          console.error(
+            "DarkShield could not open the full report:",
+            error
           );
         }
+      });
+    }
+  }
+
+  // ============================================================
+  // ENCODE REPORT FOR URL HASH
+  // UTF-8 safe (₹, →, ⚠ etc.), base64url, no deprecated APIs.
+  // ============================================================
+
+  function encodeReportForUrl(report) {
+    const bytes =
+      new TextEncoder().encode(JSON.stringify(report));
+
+    let binary = "";
+    const chunk = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(
+        null,
+        bytes.subarray(i, i + chunk)
       );
     }
+
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   }
 
   // ============================================================

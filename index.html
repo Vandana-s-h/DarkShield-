@@ -416,6 +416,7 @@ function applySettings(){
 });
 applySettings();
 
+
 /* ---------- overlays ---------- */
 function openOv(id){document.getElementById(id).classList.add("open")}
 function closeOv(id){document.getElementById(id).classList.remove("open")}
@@ -770,6 +771,219 @@ logThresh.onchange=()=>{if(logResults.length)runLog()};
 logSample.onclick=()=>{logInput.value=SAMPLE_LOG.join("\n");runLog()};
 logRun.onclick=runLog;
 logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{logInput.value=String(r.result).slice(0,200000);runLog()};r.readAsText(f)};
+
+
+
+
+/* ============================================================
+   DARKSHIELD EXTENSION → WEBSITE REPORT VIEWER  (MODE B)
+   Displays the analysis transferred by the extension.
+   Never calls runAnalysis / finishAnalysis / buildEvidence / scoreOf.
+   If no report is in the URL hash, the site behaves as normal (MODE A).
+   ============================================================ */
+(function () {
+  "use strict";
+
+  const HASH_RE = /^#(?:extension-report|extension-analysis)=(.+)$/;
+
+  function decodeReport(encoded) {
+    try { encoded = decodeURIComponent(encoded); } catch (e) {}
+    let b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+    return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+  }
+
+  const asArray = v => (Array.isArray(v) ? v : []);
+
+  // Extension sends strings like "Label — Evidence: a, b"; also accept objects.
+  function splitSignal(sig) {
+    if (sig && typeof sig === "object") {
+      const ev = asArray(sig.evidence);
+      return {
+        label: sig.label || sig.name || sig.id || "Detection signal",
+        desc: ev.length ? "Evidence: " + ev.join(", ") : (sig.description || "")
+      };
+    }
+    const s = String(sig ?? "");
+    const marker = " — Evidence: ";
+    const i = s.indexOf(marker);
+    return i === -1
+      ? { label: s, desc: "" }
+      : { label: s.slice(0, i), desc: "Evidence: " + s.slice(i + marker.length) };
+  }
+
+  function renderGroup(container, signals, emptyMsg) {
+    if (!container) return;
+    if (!signals.length) {
+      container.innerHTML = `<div class="clean">${esc(emptyMsg)}</div>`;
+      return;
+    }
+    container.innerHTML = signals.map(sig => {
+      const s = splitSignal(sig);
+      return `<div class="sig open">
+        <div class="top">🔴 <span class="name">${esc(s.label)}</span></div>
+        ${s.desc ? `<div class="desc">${esc(s.desc)}</div>` : ""}
+      </div>`;
+    }).join("");
+    container.querySelectorAll(".sig").forEach(el => {
+      el.onclick = () => el.classList.toggle("open");
+    });
+  }
+
+  // Extension sends strings like "STAGE: evidence1, evidence2"; also accept objects.
+  function parseStep(step) {
+    if (step && typeof step === "object") {
+      const ev = asArray(step.evidence);
+      const stage = String(step.stage || "");
+      return {
+        stage,
+        evidence: ev.join(", "),
+        full: ev.length ? stage + ": " + ev.join(", ") : stage,
+        hit: step.observed !== false
+      };
+    }
+    const s = String(step ?? "");
+    const i = s.indexOf(": ");
+    return {
+      stage: i === -1 ? s : s.slice(0, i),
+      evidence: i === -1 ? "" : s.slice(i + 2),
+      full: s,
+      hit: s !== "NO CLEAR MANIPULATION CHAIN"
+    };
+  }
+
+  function renderExtensionReport(report) {
+    const a = (report && report.analysis) ? report.analysis : report;
+    if (!a || typeof a !== "object") throw new Error("Report has no analysis object");
+
+    window.__dsExtensionReportMode = true;
+
+    const score = Math.max(0, Math.min(100, Number(a.score ?? a.risk_score ?? 0) || 0));
+    const severity = String(a.severity || "LOW").toUpperCase();
+    const intent = a.attackIntent || a.attack_intent || "No clear malicious intent";
+    const secondary = asArray(a.secondaryIntents || a.secondary_intents);
+    const technical = asArray(a.technicalSignals || a.technical_signals);
+    const social = asArray(a.socialSignals || a.social_signals);
+    const behavioral = asArray(
+      a.behaviorSignals || a.behavioralSignals || a.behavioral_signals
+    );
+    const manipulation = asArray(a.manipulationMap || a.manipulation_map).map(parseStep);
+    const breakdownData = a.scoreBreakdown || a.score_breakdown || null;
+    const recommendation = a.recommendation || "Verify the website independently before entering sensitive information.";
+    const sourceLabel = String(a.source || "").toUpperCase() === "BACKEND"
+      ? "BACKEND ANALYSIS"
+      : "LOCAL FALLBACK ANALYSIS";
+
+    let color = "var(--green)";
+    if (severity === "CRITICAL" || severity === "HIGH") color = "var(--red)";
+    else if (severity === "MODERATE" || severity === "MEDIUM") color = "var(--amber)";
+
+    // Make sure the normal scan UI is not mid-animation
+    scanning.style.display = "none";
+    results.style.display = "block";
+
+    // Score + gauge
+    scoreNum.textContent = score;
+    const circ = 2 * Math.PI * 47;
+    arc.style.stroke = color;
+    arc.setAttribute("stroke-dashoffset", circ - (score / 100) * circ);
+
+    // Severity + intent
+    levelText.textContent = severity + " RISK";
+    levelText.style.color = color;
+    levelSub.textContent = "Attack intent: " + intent;
+
+    // Source
+    analysisMeta.textContent =
+      "ANALYSIS SOURCE: " + sourceLabel +
+      " • TRANSFERRED FROM DARKSHIELD EXTENSION" +
+      (report.pageUrl ? " • TARGET: " + report.pageUrl : "");
+
+    // Score breakdown
+    const labels = [
+      ["technical", "Technical"],
+      ["social", "Social"],
+      ["behavioral", "Behavioral"],
+      ["combination_bonus", "Combination bonus"],
+      ["categories_present", "Categories present"]
+    ];
+    breakdown.style.display = "block";
+    breakdown.innerHTML = breakdownData
+      ? labels
+          .filter(([k]) => breakdownData[k] !== undefined && breakdownData[k] !== null)
+          .map(([k, l]) => `<div>${esc(l)}: ${esc(breakdownData[k])}</div>`)
+          .join("") || "<div>No score breakdown available.</div>"
+      : "<div>No score breakdown available.</div>";
+
+    // Signals
+    renderGroup(sigTech, technical, "No technical signals detected.");
+    renderGroup(sigSocial, social, "No social-engineering signals detected.");
+    renderGroup(sigBehavior, behavioral, "No behavioral signals detected.");
+    sigTech.style.display = settings.tech ? "grid" : "none";
+    sigSocial.style.display = settings.social ? "grid" : "none";
+
+    // Explanation / why / goal / advice
+    aiExplain.textContent = a.explanation || "No explanation was supplied with this report.";
+    whyMatters.textContent =
+      `This report contains ${technical.length} technical, ${social.length} social-engineering ` +
+      `and ${behavioral.length} behavioral signal${(technical.length + social.length + behavioral.length) === 1 ? "" : "s"}, ` +
+      `assessed as ${severity} risk (${score}/100).`;
+    attackerGoal.textContent =
+      intent + (secondary.length ? " — Secondary intents: " + secondary.join(", ") : "");
+    whatToDo.innerHTML = `<li>${esc(recommendation)}</li>`;
+
+    // Manipulation map
+    mmap.innerHTML = manipulation.length
+      ? manipulation.map(s =>
+          `<div class="mnode ${s.hit ? "hit" : ""}" title="${esc(s.evidence || (s.hit ? s.stage : "Not detected"))}">${esc(s.stage)}</div>`
+        ).join('<span class="marrow">→</span>')
+      : '<div class="mnode">No manipulation chain detected</div>';
+
+    // Attack story (full text of each step, including evidence)
+    story.innerHTML = manipulation.length
+      ? manipulation.map((s, i) =>
+          `<div class="storystep"><b>${String(i + 1).padStart(2, "0")}</b>${esc(s.full)}</div>`
+        ).join("")
+      : '<div class="storystep"><b>01</b>No clear manipulation chain detected.</div>';
+
+    // Safety box
+    safetyBox.innerHTML = score >= 51
+      ? `<div class="safety"><h3>⚠ DarkShield Safety Mode</h3>
+          <p>High-risk indicators were detected on the analyzed page.</p>
+          <ul><li>Do not enter credentials</li><li>Do not submit payment information</li>
+          <li>Verify the domain independently</li><li>Leave the page if uncertain</li></ul></div>`
+      : "";
+
+    setTimeout(() => {
+      const sec = document.getElementById("threatanalysis");
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  }
+
+  // Returns true only if an extension report was found AND rendered.
+  function tryLoadExtensionReport() {
+    const m = window.location.hash.match(HASH_RE);
+    if (!m) return false;            // MODE A: nothing changes
+    try {
+      renderExtensionReport(decodeReport(m[1]));
+      return true;
+    } catch (err) {
+      console.error("DarkShield extension report could not be loaded:", err);
+      return false;
+    }
+  }
+
+  tryLoadExtensionReport();
+  window.addEventListener("hashchange", tryLoadExtensionReport);
+})();
+
+/* START EXTENSION ANALYSIS LOADING */
+
+
+loadExtensionAnalysis();
 </script>
 </body>
 </html>
+
