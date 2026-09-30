@@ -5,13 +5,13 @@
   // CONSTANTS + SELF-GUARD
   // ============================================================
 
-  const DARKSHIELD_SITE_HOSTNAME = "eloquent-gumption-407aad.netlify.app";
-  const DARKSHIELD_REPORT_URL = "https://" + DARKSHIELD_SITE_HOSTNAME + "/";
+  //const DARKSHIELD_SITE_HOSTNAME = "eloquent-gumption-407aad.netlify.app";
+  const DARKSHIELD_REPORT_URL = "https://cheerful-cannoli-d30797.netlify.app/"
 
   // The DarkShield website is the REPORT VIEWER. Never analyze it and
   // never show the overlay there. (A `return` is valid here because
   // this code is inside the IIFE function body.)
-  if (window.location.hostname === DARKSHIELD_SITE_HOSTNAME) {
+  if (window.location.hostname === "cheerful-cannoli-d30797.netlify.app") {
     return;
   }
 

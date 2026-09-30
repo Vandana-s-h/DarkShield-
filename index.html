@@ -201,6 +201,12 @@ footer b{color:var(--text)}
 .setrow select,.setrow input[type=checkbox]{accent-color:var(--violet)}
 .protectbtn{background:var(--red);color:#2a0808;border:none;font-weight:700;padding:9px 15px;border-radius:8px;cursor:pointer}
 .ghostbtn{background:transparent;color:var(--muted);border:1px solid var(--border);padding:9px 15px;border-radius:8px;cursor:pointer}
+
+/* Extension report banner */
+#dsExtBanner{position:sticky;top:64px;z-index:29;margin:10px auto;max-width:1080px;padding:10px 14px;border-radius:10px;
+  font:600 13px ui-monospace,Consolas,monospace;display:none}
+#dsExtBanner.ok{display:block;border:1px solid var(--cyan);background:#22e6d615;color:var(--cyan)}
+#dsExtBanner.err{display:block;border:1px solid var(--red);background:#ef5b6a18;color:var(--red)}
 </style>
 </head>
 <body>
@@ -220,6 +226,7 @@ footer b{color:var(--text)}
 <div class="avatar" id="btnProfile">DS</div>
 </div>
 </nav>
+<div id="dsExtBanner"></div>
 <div class="wrap">
 <section class="hero" id="overview">
 <div>
@@ -773,26 +780,55 @@ logRun.onclick=runLog;
 logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{logInput.value=String(r.result).slice(0,200000);runLog()};r.readAsText(f)};
 
 
-
-
 /* ============================================================
-   DARKSHIELD EXTENSION → WEBSITE REPORT VIEWER  (MODE B)
+   DARKSHIELD EXTENSION → WEBSITE REPORT VIEWER  (MODE 2)
    Displays the analysis transferred by the extension.
-   Never calls runAnalysis / finishAnalysis / buildEvidence / scoreOf.
-   If no report is in the URL hash, the site behaves as normal (MODE A).
+   Never calls runAnalysis / finishAnalysis / buildEvidence / scoreOf
+   and never contacts the backend.
+   If no report is present in the URL, the site behaves normally (MODE 1).
+   Accepted handoff formats:
+     #extension-report=<base64url JSON>
+     #extension-analysis=<base64 JSON>
+     ?analysis=<base64url JSON or URL-encoded JSON>
    ============================================================ */
 (function () {
   "use strict";
 
   const HASH_RE = /^#(?:extension-report|extension-analysis)=(.+)$/;
 
+  function setBanner(message, ok) {
+    const b = document.getElementById("dsExtBanner");
+    if (!b) return;
+    b.className = ok ? "ok" : "err";
+    b.textContent = message;
+  }
+
   function decodeReport(encoded) {
-    try { encoded = decodeURIComponent(encoded); } catch (e) {}
-    let b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    let text = encoded;
+    try { text = decodeURIComponent(encoded); } catch (e) {}
+    const trimmed = text.trim();
+
+    // Plain (URL-decoded) JSON
+    if (trimmed.charAt(0) === "{") {
+      return JSON.parse(trimmed);
+    }
+
+    // UTF-8 safe base64 / base64url JSON
+    let b64 = trimmed.replace(/-/g, "+").replace(/_/g, "/").replace(/\s/g, "");
     while (b64.length % 4) b64 += "=";
     const bin = atob(b64);
     const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
     return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+  }
+
+  function findPayload() {
+    const hm = window.location.hash.match(HASH_RE);
+    if (hm) return hm[1];
+    try {
+      const q = new URLSearchParams(window.location.search).get("analysis");
+      if (q) return q;
+    } catch (e) {}
+    return null;
   }
 
   const asArray = v => (Array.isArray(v) ? v : []);
@@ -817,15 +853,13 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
   function renderGroup(container, signals, emptyMsg) {
     if (!container) return;
     if (!signals.length) {
-      container.innerHTML = `<div class="clean">${esc(emptyMsg)}</div>`;
+      container.innerHTML = '<div class="clean">' + esc(emptyMsg) + "</div>";
       return;
     }
     container.innerHTML = signals.map(sig => {
       const s = splitSignal(sig);
-      return `<div class="sig open">
-        <div class="top">🔴 <span class="name">${esc(s.label)}</span></div>
-        ${s.desc ? `<div class="desc">${esc(s.desc)}</div>` : ""}
-      </div>`;
+      return '<div class="sig open"><div class="top">🔴 <span class="name">' + esc(s.label) + "</span></div>" +
+        (s.desc ? '<div class="desc">' + esc(s.desc) + "</div>" : "") + "</div>";
     }).join("");
     container.querySelectorAll(".sig").forEach(el => {
       el.onclick = () => el.classList.toggle("open");
@@ -866,15 +900,14 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
     const secondary = asArray(a.secondaryIntents || a.secondary_intents);
     const technical = asArray(a.technicalSignals || a.technical_signals);
     const social = asArray(a.socialSignals || a.social_signals);
-    const behavioral = asArray(
-      a.behaviorSignals || a.behavioralSignals || a.behavioral_signals
-    );
+    const behavioral = asArray(a.behaviorSignals || a.behavioralSignals || a.behavioral_signals);
     const manipulation = asArray(a.manipulationMap || a.manipulation_map).map(parseStep);
     const breakdownData = a.scoreBreakdown || a.score_breakdown || null;
     const recommendation = a.recommendation || "Verify the website independently before entering sensitive information.";
-    const sourceLabel = String(a.source || "").toUpperCase() === "BACKEND"
+    const rawSource = String(a.source || "").toUpperCase();
+    const sourceLabel = rawSource === "BACKEND"
       ? "BACKEND ANALYSIS"
-      : "LOCAL FALLBACK ANALYSIS";
+      : (rawSource ? rawSource + " ANALYSIS" : "EXTENSION ANALYSIS");
 
     let color = "var(--green)";
     if (severity === "CRITICAL" || severity === "HIGH") color = "var(--red)";
@@ -899,7 +932,7 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
     analysisMeta.textContent =
       "ANALYSIS SOURCE: " + sourceLabel +
       " • TRANSFERRED FROM DARKSHIELD EXTENSION" +
-      (report.pageUrl ? " • TARGET: " + report.pageUrl : "");
+      (report && report.pageUrl ? " • TARGET: " + report.pageUrl : "");
 
     // Score breakdown
     const labels = [
@@ -911,10 +944,10 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
     ];
     breakdown.style.display = "block";
     breakdown.innerHTML = breakdownData
-      ? labels
+      ? (labels
           .filter(([k]) => breakdownData[k] !== undefined && breakdownData[k] !== null)
-          .map(([k, l]) => `<div>${esc(l)}: ${esc(breakdownData[k])}</div>`)
-          .join("") || "<div>No score breakdown available.</div>"
+          .map(([k, l]) => "<div>" + esc(l) + ": " + esc(breakdownData[k]) + "</div>")
+          .join("") || "<div>No score breakdown available.</div>")
       : "<div>No score breakdown available.</div>";
 
     // Signals
@@ -927,34 +960,41 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
     // Explanation / why / goal / advice
     aiExplain.textContent = a.explanation || "No explanation was supplied with this report.";
     whyMatters.textContent =
-      `This report contains ${technical.length} technical, ${social.length} social-engineering ` +
-      `and ${behavioral.length} behavioral signal${(technical.length + social.length + behavioral.length) === 1 ? "" : "s"}, ` +
-      `assessed as ${severity} risk (${score}/100).`;
+      "This report contains " + technical.length + " technical, " + social.length + " social-engineering and " +
+      behavioral.length + " behavioral signal" +
+      ((technical.length + social.length + behavioral.length) === 1 ? "" : "s") +
+      ", assessed as " + severity + " risk (" + score + "/100).";
     attackerGoal.textContent =
       intent + (secondary.length ? " — Secondary intents: " + secondary.join(", ") : "");
-    whatToDo.innerHTML = `<li>${esc(recommendation)}</li>`;
+    whatToDo.innerHTML = "<li>" + esc(recommendation) + "</li>";
 
     // Manipulation map
     mmap.innerHTML = manipulation.length
       ? manipulation.map(s =>
-          `<div class="mnode ${s.hit ? "hit" : ""}" title="${esc(s.evidence || (s.hit ? s.stage : "Not detected"))}">${esc(s.stage)}</div>`
+          '<div class="mnode ' + (s.hit ? "hit" : "") + '" title="' +
+          esc(s.evidence || (s.hit ? s.stage : "Not detected")) + '">' + esc(s.stage) + "</div>"
         ).join('<span class="marrow">→</span>')
       : '<div class="mnode">No manipulation chain detected</div>';
 
     // Attack story (full text of each step, including evidence)
     story.innerHTML = manipulation.length
       ? manipulation.map((s, i) =>
-          `<div class="storystep"><b>${String(i + 1).padStart(2, "0")}</b>${esc(s.full)}</div>`
+          '<div class="storystep"><b>' + String(i + 1).padStart(2, "0") + "</b>" + esc(s.full) + "</div>"
         ).join("")
       : '<div class="storystep"><b>01</b>No clear manipulation chain detected.</div>';
 
     // Safety box
     safetyBox.innerHTML = score >= 51
-      ? `<div class="safety"><h3>⚠ DarkShield Safety Mode</h3>
-          <p>High-risk indicators were detected on the analyzed page.</p>
-          <ul><li>Do not enter credentials</li><li>Do not submit payment information</li>
-          <li>Verify the domain independently</li><li>Leave the page if uncertain</li></ul></div>`
+      ? '<div class="safety"><h3>⚠ DarkShield Safety Mode</h3>' +
+        "<p>High-risk indicators were detected on the analyzed page.</p>" +
+        "<ul><li>Do not enter credentials</li><li>Do not submit payment information</li>" +
+        "<li>Verify the domain independently</li><li>Leave the page if uncertain</li></ul></div>"
       : "";
+
+    setBanner(
+      "✓ Showing DarkShield extension report — " + sourceLabel + " — " + score + "/100 " + severity,
+      true
+    );
 
     setTimeout(() => {
       const sec = document.getElementById("threatanalysis");
@@ -964,13 +1004,14 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
 
   // Returns true only if an extension report was found AND rendered.
   function tryLoadExtensionReport() {
-    const m = window.location.hash.match(HASH_RE);
-    if (!m) return false;            // MODE A: nothing changes
+    const payload = findPayload();
+    if (!payload) return false;        // MODE 1: nothing changes
     try {
-      renderExtensionReport(decodeReport(m[1]));
+      renderExtensionReport(decodeReport(payload));
       return true;
     } catch (err) {
       console.error("DarkShield extension report could not be loaded:", err);
+      setBanner("✗ An extension report was found in the URL but could not be displayed: " + err.message, false);
       return false;
     }
   }
@@ -978,12 +1019,6 @@ logFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileRead
   tryLoadExtensionReport();
   window.addEventListener("hashchange", tryLoadExtensionReport);
 })();
-
-/* START EXTENSION ANALYSIS LOADING */
-
-
-loadExtensionAnalysis();
 </script>
 </body>
 </html>
-

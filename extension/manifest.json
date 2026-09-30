@@ -25,7 +25,7 @@
       "js": ["content.js"],
       "css": ["overlay.css"],
       "run_at": "document_idle",
-      "exclude_matches": ["https://eloquent-gumption-407aad.netlify.app/*"]
+      "exclude_matches": ["https://cheerful-cannoli-d30797.netlify.app/"]
     }
   ],
 
